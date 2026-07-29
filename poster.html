@@ -70,7 +70,7 @@ function render(data){
   if(!store){
     $('#bar').style.display='none';
     $('#app').innerHTML=`<div class="err"><h2>店舗が見つかりません</h2>
-      <p>poster.html?s=&lt;店舗ID&gt; の形式で開いてください。<br>例）poster.html?s=ieyasu-nishiki-5f</p></div>`;
+      <p>poster.html?s=&lt;店舗ID&gt; の形式で開いてください。<br>例）poster.html?s=sample-black</p></div>`;
     return;
   }
   const rk=data.ranks[store.rank]||data.ranks.silver;
