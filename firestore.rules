@@ -1,0 +1,58 @@
+rules_version = '2';
+
+// キレイン Firestore セキュリティルール
+// 目的：匿名で「投稿」はできる（口コミを増やす）が、改ざん・荒らし・他人の店の乗っ取りは防ぐ。
+// Firebase Console → Firestore Database → ルール にこの内容を貼って「公開」。
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 投稿（消費者の清潔評価）──────────────────────────
+    match /posts/{postId} {
+      // 読取：レビュー表示のため公開（レビューサイトとして成立させる）
+      //  ※「ネガ詳細は店舗限定」を厳密にするには、負の情報を別サブコレクションへ
+      //    分離するのが正攻法（Phase2）。現状は公開読取＝MVP割り切り。
+      allow read: if true;
+
+      // 作成：匿名で許可。ただし最低限の検証で荒らしを弾く
+      allow create: if isValidPost();
+
+      // 更新・削除：不可（投稿は不変＝改ざん・荒らし・世論操作を防ぐ）
+      allow update, delete: if false;
+    }
+
+    function isValidPost() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['place_id'])
+          && d.place_id is string
+          && d.place_id.size() > 0
+          && d.place_id.size() < 300
+          && d.size() < 40;                 // フィールド数の暴発を防止
+    }
+
+    // ── 店舗（オーナー登録）──────────────────────────────
+    match /stores/{uid} {
+      allow read: if true;                                    // 店舗の公開情報
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
+                    && !willBePaid();                         // 登録時にis_paidを勝手にtrueにさせない
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
+                    && !changesPaidFlag();                    // is_paid/課金フラグはクライアントから変更不可
+      allow delete: if false;
+    }
+    function willBePaid() {
+      let d = request.resource.data;
+      return ('is_paid' in d) && d.is_paid == true;
+    }
+    function changesPaidFlag() {
+      return request.resource.data.diff(resource.data)
+             .affectedKeys().hasAny(['is_paid', 'stripe_customer_id']);
+    }
+
+    // ── それ以外はすべて拒否（デフォルト遮断）──────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
