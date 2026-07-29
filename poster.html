@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>キレイン認証 掲示ポスター</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+:root{--pine:#0e3a33;--mint:#25b598;--mint-soft:#e6f5f1;--gold:#c2a25f;--ink:#182320;--muted:#5d6b66;--line:#e4eae7;--bg:#f6f9f8}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Noto Sans JP",system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;padding:24px}
+h1,h2,h3{font-family:"Noto Serif JP",serif}
+
+.bar{width:min(420px,92vw);margin:0 auto 16px;display:flex;gap:10px}
+.bar button{flex:1;padding:13px;border-radius:12px;border:none;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.bar .print{background:var(--mint);color:#062019}
+.bar .print:hover{background:#1ea487}
+
+/* ポスター本体（A5相当） */
+.poster{width:min(420px,92vw);margin:0 auto;background:#fff;border-radius:22px;overflow:hidden;
+  box-shadow:0 24px 60px -28px rgba(14,58,51,.4);text-align:center}
+.p-top{background:linear-gradient(155deg,#082722,#0e3a33);color:#fff;padding:30px 28px 26px}
+.p-logo{display:inline-flex;align-items:center;gap:8px;font-family:"Cormorant Garamond",serif;font-size:22px;font-weight:700;margin-bottom:14px}
+.p-logo svg{width:24px;height:24px}
+.p-logo b{font-family:"Noto Sans JP";font-size:12px;font-weight:700;opacity:.9}
+.p-seal{width:96px;height:96px;margin:6px auto 12px;border-radius:50%;border:3px solid rgba(255,255,255,.5);
+  display:flex;flex-direction:column;align-items:center;justify-content:center}
+.p-seal .rk{font-family:"Noto Serif JP";font-size:20px;font-weight:700}
+.p-seal .lv{font-size:9px;letter-spacing:.16em;opacity:.85;margin-top:2px}
+.p-cert{font-size:14px;font-weight:700;letter-spacing:.1em}
+.p-sub{font-size:12px;opacity:.9;margin-top:6px}
+
+.p-mid{padding:26px 28px 8px}
+.p-store{font-family:"Noto Serif JP";font-size:20px;font-weight:700;color:var(--pine);line-height:1.4;margin-bottom:4px}
+.p-area{font-size:12px;color:var(--muted);margin-bottom:20px}
+.qr{width:210px;height:210px;margin:0 auto;padding:12px;background:#fff;border:1px solid var(--line);border-radius:16px}
+.qr img{width:100%;height:100%;display:block}
+.p-guide{font-size:14px;font-weight:700;color:var(--pine);margin-top:18px;line-height:1.6}
+.p-guide .mint{color:var(--mint)}
+.p-note{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.7}
+.p-foot{border-top:1px solid var(--line);margin-top:20px;padding:14px 0;font-size:10.5px;color:#9fb3ac}
+.err{width:min(420px,92vw);margin:0 auto;background:#fff;border-radius:22px;padding:40px 28px;text-align:center;box-shadow:0 24px 60px -28px rgba(14,58,51,.4)}
+.err h2{color:var(--pine);font-size:18px;margin-bottom:10px}
+.err p{color:var(--muted);font-size:13px}
+
+@media print{
+  body{background:#fff;padding:0}
+  .bar{display:none}
+  .poster{box-shadow:none;border-radius:0;width:100%;max-width:100%}
+  @page{margin:12mm}
+}
+</style>
+</head>
+<body>
+<div class="bar" id="bar">
+  <button class="print" onclick="window.print()">🖨 このポスターを印刷</button>
+</div>
+<div id="app"><div class="err"><p style="color:#9fb3ac">読み込み中…</p></div></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const qp=new URLSearchParams(location.search);
+
+function render(data){
+  const id=qp.get('s');
+  const store=(data.stores||[]).find(s=>s.id===id);
+  if(!store){
+    $('#bar').style.display='none';
+    $('#app').innerHTML=`<div class="err"><h2>店舗が見つかりません</h2>
+      <p>poster.html?s=&lt;店舗ID&gt; の形式で開いてください。<br>例）poster.html?s=ieyasu-nishiki-5f</p></div>`;
+    return;
+  }
+  const rk=data.ranks[store.rank]||data.ranks.silver;
+  // 客がスキャンする先＝この掲示物と同じ場所に置かれた cert.html（公開時は自動で本番URLになる）
+  const certUrl=new URL('cert.html?s='+encodeURIComponent(id), location.href).href;
+  const base=qp.get('base');
+  const finalUrl=base ? (base.replace(/\/$/,'')+'/cert.html?s='+encodeURIComponent(id)) : certUrl;
+  const qrSrc='https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=0&qzone=1&data='+encodeURIComponent(finalUrl);
+
+  $('#app').innerHTML=`
+    <div class="poster">
+      <div class="p-top">
+        <div class="p-logo">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 22s7-6.2 7-12A7 7 0 0 0 5 10c0 5.8 7 12 7 12Z" fill="#25b598"/><circle cx="12" cy="10" r="2.6" fill="#fff"/></svg>
+          Kirein <b>キレイン</b>
+        </div>
+        <div class="p-seal" style="background:${rk.grad}">
+          <span class="rk">${esc(rk.label)}</span>
+          <span class="lv">CERTIFIED</span>
+        </div>
+        <div class="p-cert">✓ キレイン認証済みの店舗です</div>
+        <div class="p-sub">「${esc(rk.sub)}」</div>
+      </div>
+      <div class="p-mid">
+        <div class="p-store">${esc(store.name)}</div>
+        <div class="p-area">${esc(store.area)}</div>
+        <div class="qr"><img src="${qrSrc}" alt="キレイン認証QR" /></div>
+        <div class="p-guide">スマホのカメラで<span class="mint"> QR </span>をかざすと<br>この店の<span class="mint">清潔評価</span>が見られます</div>
+        <div class="p-note">第三者（キレイン公認 覆面調査員）による清潔認証。<br>${esc(store.cleaning||'')}</div>
+        <div class="p-foot">Kirein 認証ID：${esc(store.id)}　／　認証日 ${esc(store.certifiedAt)}</div>
+      </div>
+    </div>`;
+}
+
+fetch('stores.json?cb='+Date.now()).then(r=>r.json()).then(render).catch(()=>{
+  $('#bar').style.display='none';
+  $('#app').innerHTML=`<div class="err"><h2>読み込みに失敗しました</h2><p>stores.json を読み込めませんでした。</p></div>`;
+});
+</script>
+</body>
+</html>

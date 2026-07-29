@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "brand": "キレイン",
+    "tagline": "清潔を、見えるように。",
+    "contact": "kirein.jp@gmail.com"
+  },
+  "ranks": {
+    "silver":   { "label": "シルバー",  "sub": "ためらわず使える",   "color": "#9aa5a2", "grad": "linear-gradient(135deg,#c7d0cd,#9aa5a2)" },
+    "gold":     { "label": "ゴールド",  "sub": "気持ちよく使える",   "color": "#c2a25f", "grad": "linear-gradient(135deg,#e3c986,#b5934c)" },
+    "platinum": { "label": "プラチナ",  "sub": "わざわざ使いたい",   "color": "#5fb7c2", "grad": "linear-gradient(135deg,#8fd6df,#4a99a4)" },
+    "black":    { "label": "ブラック",  "sub": "毎日プロが守る",     "color": "#182320", "grad": "linear-gradient(135deg,#2b3a36,#0e1614)" }
+  },
+  "items": ["におい", "トイレ", "客席設備", "接客衛生"],
+  "stores": [
+    {
+      "id": "ieyasu-nishiki-5f",
+      "name": "ラウンジ いえやす 錦5F",
+      "area": "名古屋市中区 錦",
+      "category": "会員制ラウンジ",
+      "rank": "black",
+      "certifiedAt": "2026-07-29",
+      "nextAudit": "2026-08-29",
+      "scores": { "におい": 4.8, "トイレ": 4.9, "客席設備": 4.7, "接客衛生": 4.9 },
+      "cleaning": "提携プロ清掃 — 毎日実施",
+      "auditor": "キレイン公認 覆面調査員",
+      "reviews": 128,
+      "message": "お客様が、心からくつろげる空間であること。私たちはそれを毎日守っています。"
+    },
+    {
+      "id": "demo-cafe-sakae",
+      "name": "（デモ）Café Lumière 栄",
+      "area": "名古屋市中区 栄",
+      "category": "カフェ",
+      "rank": "gold",
+      "certifiedAt": "2026-07-20",
+      "nextAudit": "2026-08-20",
+      "scores": { "におい": 4.4, "トイレ": 4.6, "客席設備": 4.3, "接客衛生": 4.5 },
+      "cleaning": "定期清掃 — 週3回",
+      "auditor": "キレイン公認 覆面調査員",
+      "reviews": 54,
+      "message": "毎日の一杯を、清潔な空間で。"
+    }
+  ]
+}
