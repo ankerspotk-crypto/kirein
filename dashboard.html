@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>キレイン 店舗ダッシュボード</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --pine:#0e3a33;--pine-deep:#082722;--mint:#25b598;--mint-soft:#e6f5f1;
+  --gold:#c2a25f;--ink:#182320;--muted:#5d6b66;--line:#e4eae7;
+  --bg:#f6f9f8;--card:#fff;--radius:18px;--shadow:0 16px 44px -24px rgba(14,58,51,.3);
+  --red:#c0392b;--red-soft:#fff5f5;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Noto Sans JP",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Noto Serif JP",serif}
+.wrap{width:min(620px,94vw);margin:0 auto;padding:18px 0 56px}
+.logo{display:flex;align-items:center;gap:8px;font-family:"Cormorant Garamond",serif;font-size:21px;color:var(--pine);font-weight:600;padding:12px 0}
+.logo svg{width:22px;height:22px}
+.logo b{font-family:"Noto Sans JP";font-size:12px;font-weight:700}
+.logo .tag{margin-left:auto;font-family:"Noto Sans JP";font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em}
+
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+.card-h{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.card-h h2{font-size:15px;color:var(--pine)}
+.card-h .sub{font-size:11px;color:var(--muted)}
+.card-b{padding:20px 22px}
+
+/* 店ヘッダ */
+.st-head{padding:22px;display:flex;align-items:center;gap:16px}
+.st-seal{width:64px;height:64px;flex:none;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;border:2px solid rgba(255,255,255,.5)}
+.st-seal .rk{font-family:"Noto Serif JP";font-size:13px;font-weight:700;line-height:1}
+.st-seal .lv{font-size:7px;letter-spacing:.1em;opacity:.85;margin-top:2px}
+.st-info .nm{font-family:"Noto Serif JP";font-size:18px;font-weight:700;color:var(--pine)}
+.st-info .meta{font-size:12px;color:var(--muted);margin-top:3px}
+
+/* スコア */
+.score-row{display:grid;grid-template-columns:80px 1fr 40px;align-items:center;gap:12px;margin-bottom:12px}
+.score-row:last-child{margin-bottom:0}
+.score-row .lbl{font-size:13px;font-weight:500}
+.score-bar{height:8px;background:var(--mint-soft);border-radius:99px;overflow:hidden}
+.score-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--mint),#1ea487);border-radius:99px}
+.score-row .v{font-family:"Cormorant Garamond",serif;font-size:18px;font-weight:700;color:var(--pine);text-align:right}
+.kpis{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.kpi{flex:1;min-width:90px;background:var(--bg);border-radius:12px;padding:12px 14px;text-align:center}
+.kpi .n{font-family:"Cormorant Garamond",serif;font-size:24px;font-weight:700;color:var(--pine)}
+.kpi .l{font-size:10.5px;color:var(--muted);margin-top:2px}
+
+/* ロック */
+.lock{position:relative}
+.lock-teaser{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lock-teaser .t{background:var(--bg);border-radius:12px;padding:16px;text-align:center}
+.lock-teaser .t .n{font-family:"Cormorant Garamond",serif;font-size:30px;font-weight:700;color:var(--pine)}
+.lock-teaser .t .l{font-size:12px;color:var(--muted)}
+.lock-cta{margin-top:18px;background:linear-gradient(150deg,var(--pine-deep),#0b2c27);color:#fff;border-radius:14px;padding:24px 22px;text-align:center}
+.lock-cta .ico{font-size:26px}
+.lock-cta h3{font-size:17px;margin:8px 0 6px}
+.lock-cta p{font-size:12.5px;color:#c2d6d0;line-height:1.8;margin-bottom:16px}
+.lock-cta .price{font-family:"Cormorant Garamond",serif;font-size:30px;font-weight:700}
+.lock-cta .price span{font-size:13px;font-family:"Noto Sans JP";color:#9fc4ba}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 26px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:inherit;text-decoration:none;transition:.2s}
+.btn-mint{background:var(--mint);color:#062019}.btn-mint:hover{background:#1ea487}
+.keyrow{margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.keyrow input{font-family:inherit;font-size:13px;padding:11px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;width:180px;outline:none}
+.keyrow input::placeholder{color:#9fc4ba}
+.keyrow button{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:10px;padding:11px 16px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.keyrow button:hover{background:rgba(255,255,255,.26)}
+.keyerr{color:#ffb4a8;font-size:12px;margin-top:10px}
+
+/* 詳細（解除後） */
+.imp{border-left:3px solid var(--line);padding:2px 0 2px 14px;margin-bottom:16px}
+.imp.high{border-color:var(--red)}.imp.mid{border-color:var(--gold)}.imp.low{border-color:var(--mint)}
+.imp .badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 9px;border-radius:999px;margin-bottom:6px}
+.imp.high .badge{background:var(--red-soft);color:var(--red)}
+.imp.mid .badge{background:#fdf6e6;color:#a5822f}
+.imp.low .badge{background:var(--mint-soft);color:var(--pine)}
+.imp .pt{font-size:13.5px;font-weight:700;line-height:1.6}
+.imp .impact{font-size:12px;color:var(--muted);margin-top:4px}
+.fb{padding:12px 14px;border-radius:10px;margin-bottom:9px;font-size:13px;line-height:1.65}
+.fb.neg{background:var(--red-soft);border-left:3px solid #e88}
+.fb.pos{background:var(--mint-soft);border-left:3px solid var(--mint)}
+.fb .m{font-size:11px;color:var(--muted);margin-top:4px}
+.unlocked-note{background:var(--mint-soft);color:var(--pine);font-size:12px;font-weight:700;padding:10px 16px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.err{background:var(--card);border-radius:var(--radius);padding:40px 24px;text-align:center;box-shadow:var(--shadow)}
+.err h2{color:var(--pine);font-size:18px;margin-bottom:8px}.err p{color:var(--muted);font-size:13px}
+.foot{text-align:center;padding:20px 0;font-size:11px;color:#9fb3ac}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 22s7-6.2 7-12A7 7 0 0 0 5 10c0 5.8 7 12 7 12Z" fill="#25b598"/><circle cx="12" cy="10" r="2.6" fill="#fff"/></svg>
+    Kirein <b>キレイン</b><span class="tag">店舗ダッシュボード</span>
+  </div>
+  <div id="app"><div class="err"><p style="color:#9fb3ac">読み込み中…</p></div></div>
+  <div class="foot">キレイン ｜ 清潔を、見えるように。 ／ お問い合わせ kirein.jp@gmail.com</div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const qp=new URLSearchParams(location.search);
+const RANKC={silver:'linear-gradient(135deg,#c7d0cd,#9aa5a2)',gold:'linear-gradient(135deg,#e3c986,#b5934c)',platinum:'linear-gradient(135deg,#8fd6df,#4a99a4)',black:'linear-gradient(135deg,#2b3a36,#0e1614)'};
+
+function summaryHtml(data,store){
+  const rk=(data.ranks||{})[store.rank]||{label:'—',sub:''};
+  const items=data.items||Object.keys(store.scores||{});
+  const rows=items.map(it=>{const v=(store.scores||{})[it]||0;
+    return `<div class="score-row"><span class="lbl">${esc(it)}</span><div class="score-bar"><span style="width:${(v/5*100).toFixed(0)}%"></span></div><span class="v">${v.toFixed(1)}</span></div>`;}).join('');
+  return `<div class="card">
+    <div class="st-head">
+      <div class="st-seal" style="background:${RANKC[store.rank]||'#999'}"><span class="rk">${esc(rk.label)}</span><span class="lv">CERT</span></div>
+      <div class="st-info"><div class="nm">${esc(store.name)}</div><div class="meta">${esc(store.area)}　·　${esc(store.category)}　·　認証 ${esc(store.certifiedAt)}</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>清潔スコア（概要）</h2><span class="sub">無料で表示</span></div>
+    <div class="card-b">${rows}
+      <div class="kpis">
+        <div class="kpi"><div class="n">${esc(store.reviews||0)}</div><div class="l">累計評価</div></div>
+        <div class="kpi"><div class="n">${esc(store.nextAudit||'—')}</div><div class="l">次回調査</div></div>
+        <div class="kpi"><div class="n">${esc(rk.label)}</div><div class="l">認証ランク</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function lockedHtml(store,detailCounts,keyErr){
+  const imp=detailCounts?detailCounts.imp:'—', fb=detailCounts?detailCounts.fb:'—';
+  return `<div class="card lock">
+    <div class="card-h"><h2>🔒 改善点・お客様の声（詳細）</h2><span class="sub">有料</span></div>
+    <div class="card-b">
+      <div class="lock-teaser">
+        <div class="t"><div class="n">${imp}</div><div class="l">改善点の指摘</div></div>
+        <div class="t"><div class="n">${fb}</div><div class="l">お客様の声</div></div>
+      </div>
+      <div class="lock-cta">
+        <div class="ico">🔑</div>
+        <h3>“なぜその点数か” を、あなただけに。</h3>
+        <p>覆面調査の具体的な指摘・改善点と、お客様が実際に感じた「どこが惜しいか」。<br>口コミに書かれる前に、直せます。</p>
+        <div class="price">¥3,000<span> / 月</span></div>
+        <div style="margin-top:16px"><a class="btn btn-mint" href="mailto:kirein.jp@gmail.com?subject=キレイン%20詳細プランの申し込み&body=店舗名・認証IDをご記入ください。解除キーをお送りします。">📩 詳細プランを申し込む</a></div>
+        <div class="keyrow">
+          <input id="keyin" placeholder="解除キーを入力" value="${esc(qp.get('key')||'')}" />
+          <button onclick="applyKey()">解除</button>
+        </div>
+        ${keyErr?`<div class="keyerr">キーが正しくありません。ご確認ください。</div>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function detailHtml(d){
+  const imps=(d.improvements||[]).map(i=>`<div class="imp ${esc(i.priority)}"><span class="badge">${i.priority==='high'?'優先度 高':i.priority==='mid'?'優先度 中':'優先度 低'} ・ ${esc(i.item)}</span><div class="pt">${esc(i.point)}</div>${i.impact?`<div class="impact">▸ ${esc(i.impact)}</div>`:''}</div>`).join('');
+  const fbs=(d.feedback||[]).map(f=>`<div class="fb ${f.sentiment==='pos'?'pos':'neg'}">${esc(f.comment)}<div class="m">${esc(f.item)}・${esc(f.date)}</div></div>`).join('');
+  return `<div class="card">
+    <div class="unlocked-note">✓ 詳細プラン 有効 — 全内容を表示中</div>
+    ${d.summary?`<div class="card-b" style="padding-top:0"><div style="background:var(--bg);border-radius:12px;padding:16px;font-size:13px;line-height:1.9">${esc(d.summary)}</div></div>`:''}
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>改善点（覆面調査より）</h2><span class="sub">${(d.improvements||[]).length}件</span></div>
+    <div class="card-b">${imps}</div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>お客様の声</h2><span class="sub">${(d.feedback||[]).length}件</span></div>
+    <div class="card-b">${fbs}</div>
+  </div>`;
+}
+
+window.applyKey=function(){
+  const k=($('#keyin').value||'').trim();
+  const u=new URL(location.href); if(k)u.searchParams.set('key',k); else u.searchParams.delete('key');
+  location.href=u.href;
+};
+
+async function main(){
+  let data;
+  try{ data=await (await fetch('stores.json?cb='+Date.now())).json(); }
+  catch(e){ $('#app').innerHTML='<div class="err"><h2>読み込み失敗</h2></div>'; return; }
+  const id=qp.get('s');
+  const store=(data.stores||[]).find(s=>s.id===id);
+  if(!store){ $('#app').innerHTML='<div class="err"><h2>店舗が見つかりません</h2><p>dashboard.html?s=&lt;店舗ID&gt; で開いてください。</p></div>'; return; }
+
+  let html=summaryHtml(data,store);
+  const tc=store.teaser?{imp:store.teaser.improvements,fb:store.teaser.feedback}:null;
+  const key=qp.get('key');
+  if(key){
+    try{
+      const d=await (await fetch('detail/'+encodeURIComponent(key)+'.json?cb='+Date.now())).json();
+      if(d && d.storeId===id){ html+=detailHtml(d); $('#app').innerHTML=html; return; }
+      html+=lockedHtml(store,tc,true);
+    }catch(e){ html+=lockedHtml(store,tc,true); }
+  } else {
+    html+=lockedHtml(store,tc,false);
+  }
+  $('#app').innerHTML=html;
+}
+main();
+</script>
+</body>
+</html>
