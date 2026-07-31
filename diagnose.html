@@ -70,6 +70,13 @@
   .fallback h3{margin:0 0 8px;font-size:15px;color:#7a6000}
   .fallback p{margin:0 0 14px;font-size:13px;color:#8a7220}
   .footnote{font-size:11px;color:var(--muted);text-align:center;margin-top:20px;line-height:1.8}
+  .pre-tag{display:inline-block;margin-top:8px;font-size:11px;font-weight:700;color:#8a6d00;background:#fff8e1;padding:3px 10px;border-radius:99px}
+  .quote{margin:18px 22px 4px;background:#fbf7ef;border:1px solid #ece0c8;border-left:4px solid var(--gold);border-radius:12px;padding:16px 18px}
+  .quote-label{font-size:11px;font-weight:700;color:#a5822f;margin-bottom:8px}
+  .quote blockquote{margin:0;font-size:14px;line-height:1.7;color:var(--ink);font-weight:600}
+  .quote-attr{font-size:11px;color:var(--muted);margin-top:8px}
+  .quote-attr a{color:var(--mint)}
+  .risk-badge{width:92px;height:92px}
   @media(max-width:520px){ .stat-grid{grid-template-columns:1fr} .risk-badge{width:100px;height:100px} }
 </style>
 </head>
@@ -113,7 +120,8 @@ const NEG_RE = /汚[いくれ]|きたな|不潔|くさ[いく]|臭[いく]|ベ�
 // ポジティブ（清潔面の好評）
 const POS_RE = /(きれい|綺麗|キレイ|清潔|ピカピカ|衛生的|行き届|清掃.{0,4}(行き届|きちんと|されて)|掃除.{0,4}(行き届|きちんと|されて)|手入れ.{0,3}(され|行き届)|清潔感)/;
 // においは肯定文脈もあるので、明確なネガ語がある時だけ減点
-function classifyReview(text){
+function classifyReview(r){
+  const text = r && r.text;
   if(!text) return null;
   const hasArea = CLEAN_AREAS.some(a => a.re.test(text));
   const neg = NEG_RE.test(text);
@@ -121,15 +129,16 @@ function classifyReview(text){
   // 清潔に無関係なレビューは除外（エリア語もネガ/ポジ語も無い）
   if(!hasArea && !neg && !pos) return null;
   const area = (CLEAN_AREAS.find(a => a.re.test(text)) || {}).key || '清潔全般';
+  const meta = { area, text, author: r.author_name || '', rating: r.rating || null };
   // ネガ優先（不満は埋もれさせない）。両方あればネガ扱い。
-  if(neg) return { s:'neg', area, text };
-  if(pos) return { s:'pos', area, text };
+  if(neg) return { s:'neg', ...meta };
+  if(pos) return { s:'pos', ...meta };
   // エリア語のみ（中立）は弱シグナルとして無視
   return null;
 }
 function diagnose(place){
   const reviews = place.reviews || [];
-  const findings = reviews.map(r => classifyReview(r.text)).filter(Boolean);
+  const findings = reviews.map(r => classifyReview(r)).filter(Boolean);
   const negs = findings.filter(f => f.s==='neg');
   const poss = findings.filter(f => f.s==='pos');
   const rating = place.rating || 0;
@@ -174,41 +183,55 @@ function renderDiag(place){
   }
 
   const m = RISK_META[d.level];
-  // ロック内の改善点プレビュー（本文はブラー）
-  const lockedItems = (d.improvements.length ? d.improvements : [{area:'清潔全般'},{area:'トイレ'}])
-    .slice(0,3).map((f,i)=>`
+  const negs = d.improvements || [];
+  const topNeg = negs[0];                 // 実引用のフック（あれば）
+  const gmap = place.url || '';
+
+  // 実引用ブロック（Google帰属つき）＝一番の武器
+  const quoteBlock = topNeg ? `
+    <div class="quote">
+      <div class="quote-label">💬 実際に、公開口コミにこう書かれています</div>
+      <blockquote>${esc(topNeg.text.slice(0,120))}${topNeg.text.length>120?'…':''}</blockquote>
+      <div class="quote-attr">${topNeg.rating?('★'+topNeg.rating+' '):''}${esc(topNeg.author||'Googleユーザー')}さんの口コミより${gmap?` ・ <a href="${esc(gmap)}" target="_blank" rel="noopener">Googleマップで見る</a>`:''}</div>
+    </div>` : '';
+
+  // 追加の気になる声（枚数だけブラーで示唆）
+  const lockedItems = negs.slice(1,4).map((f)=>`
       <div class="locked-item">
-        <span class="locked-pri ${i===0?'pri-high':'pri-mid'}">${i===0?'優先度 高':'要確認'} ・ ${esc(f.area)}</span>
-        <span class="locked-text">${esc((f.text||'お客様が指摘した具体的な清潔面の改善ポイントがここに入ります').slice(0,42))}…</span>
-      </div>`).join('');
+        <span class="locked-pri pri-mid">・ ${esc(f.area)}</span>
+        <span class="locked-text">${esc((f.text||'お客様が指摘した清潔面のポイント').slice(0,40))}…</span>
+      </div>`).join('') || `<div class="locked-item"><span class="locked-pri pri-mid">・ 現地でのみ分かる指摘</span><span class="locked-text">実際に来店しないと見えない清潔面の指摘がここに入ります</span></div>`;
 
   el.innerHTML = `
     <div class="diag">
       <div class="diag-head">
         <div class="diag-name">${esc(place.name)}</div>
         <div class="diag-meta">${esc(place.formatted_address||'')} ｜ Google評価 ★${(d.rating||'-')}（${d.total.toLocaleString()}件）</div>
+        <span class="pre-tag">🔎 現地確認前の簡易分析</span>
       </div>
+      ${quoteBlock}
       <div class="risk-row">
-        <div class="risk-badge ${m.cls}"><div><div class="rl">${m.label}</div><div class="rt">清潔リスク</div></div></div>
+        <div class="risk-badge ${m.cls}"><div><div class="rl">${m.label}</div><div class="rt">リスク兆候</div></div></div>
         <div class="risk-desc"><h3>${m.title}</h3><p>${m.desc}</p></div>
       </div>
       <div class="stat-grid">
-        <div class="stat"><div class="n">${d.analyzed}</div><div class="l">解析した既存口コミ</div></div>
+        <div class="stat"><div class="n">${d.analyzed}</div><div class="l">解析した公開口コミ</div></div>
         <div class="stat"><div class="n">${d.negCount}</div><div class="l">清潔面で気になる声</div></div>
       </div>
       <div class="locked">
-        <h4>🔒 改善ポイント：${Math.max(d.negCount,1)}件（詳細はロック中）</h4>
+        <h4>🔒 現地でしか分からない改善点は、精密診断で</h4>
         ${lockedItems}
         <div class="paywall">
-          <div class="price">詳細プランで、"なぜ・何を直すか"が全部見えます — <b>¥3,000</b>/月</div>
-          <div style="font-size:11px;color:var(--muted);margin:6px 0 14px">＋アプリに集まる実際の来店客の声で、毎月自動アップデート</div>
-          <a class="btn btn-mint btn-block" href="./business.html#price">詳細プランを見る →</a>
+          <div class="price">第三者が実際に来店して精密チェック — 現地診断レポート <b>¥39,800</b>/回</div>
+          <div style="font-size:11px;color:var(--muted);margin:6px 0 14px">写真付きレポート＋優先改善リスト＋改善シート（既存の清掃業者様・スタッフとそのまま共有可）＋改善後の再チェック。<b>業者紹介ではありません。</b></div>
+          <a class="btn btn-mint btn-block" href="./business.html#apply">現地診断を申し込む →</a>
+          <a class="btn btn-block" style="background:transparent;color:var(--pine);margin-top:8px;text-decoration:underline;font-size:12px" href="./business.html#price">料金プランを見る</a>
         </div>
       </div>
     </div>
     <div class="footnote">
-      ※ 本診断はGoogleに公開されている既存の口コミ${d.analyzed}件を第三者の目で自動解析した簡易診断です。<br>
-      有料プランでは、アプリに集まる実際の来店客の清潔評価を継続的に反映します。
+      ※ 本チェックはGoogle等に公開されている口コミ${d.analyzed}件を第三者の目で自動解析した<b>現地確認前の簡易分析</b>です。点数は目安であり、清潔さを保証・認証するものではありません。<br>
+      引用元・投稿者はGoogleマップでご確認いただけます。正式な評価は現地診断（¥39,800）で行います。
     </div>`;
 }
 
@@ -240,7 +263,7 @@ function runDiagnosis(placeId){
   el.innerHTML = '<div class="loading"><div class="spinner"></div>既存の口コミを解析しています…</div>';
   placesService.getDetails({
     placeId,
-    fields:['name','formatted_address','rating','user_ratings_total','reviews'],
+    fields:['name','formatted_address','rating','user_ratings_total','reviews','url'],
     language:'ja',
   }, (place, status)=>{
     if(status === google.maps.places.PlacesServiceStatus.OK && place){
