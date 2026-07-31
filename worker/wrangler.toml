@@ -1,0 +1,27 @@
+name = "kirein-api"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# kirein.net の /api/* だけ Worker が処理し、それ以外は GitHub Pages(origin) へ通す
+routes = [
+  { pattern = "kirein.net/api/*", zone_name = "kirein.net" }
+]
+
+# Stripeの価格ID（秘密ではないので vars でOK。手順②で作った price_xxx を入れる）
+[vars]
+STRIPE_PRICE_ID = "price_XXXXXXXXXXXX"
+
+# D1（手順③の `wrangler d1 create kirein` で出た database_id を入れる）
+[[d1_databases]]
+binding = "DB"
+database_name = "kirein"
+database_id = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+
+# Ph2 で口コミ監視Cronを有効化する時にコメント解除（6時間ごと）
+# [triggers]
+# crons = ["0 */6 * * *"]
+
+# ⚠️ 秘密は wrangler secret で入れる（ここには書かない）:
+#   wrangler secret put STRIPE_SECRET_KEY
+#   wrangler secret put STRIPE_WEBHOOK_SECRET
+#   （Ph2 で）wrangler secret put GOOGLE_PLACES_KEY
