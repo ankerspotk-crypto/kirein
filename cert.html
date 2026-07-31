@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>キレイン認証 — 清潔を、見えるように。</title>
-<meta name="description" content="この店舗はキレインの覆面調査による清潔認証を受けています。" />
+<title>キレイン清潔チェック済み — 清潔を、見えるように。</title>
+<meta name="description" content="この店舗はキレインの現地チェックを受け、お客様の清潔フィードバックに対応しています。" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet" />
@@ -22,7 +22,7 @@ h1,h2,h3{font-family:"Noto Serif JP",serif}
 .logo svg{width:24px;height:24px}
 .logo b{font-family:"Noto Sans JP";font-size:13px;font-weight:700}
 
-/* 認証カード */
+/* チェック済みカード */
 .cert{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;position:relative}
 .cert-top{padding:34px 28px 26px;text-align:center;color:#fff;position:relative}
 .cert-seal{width:118px;height:118px;margin:0 auto 16px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -72,6 +72,15 @@ h1,h2,h3{font-family:"Noto Serif JP",serif}
 .err{background:var(--card);border-radius:var(--radius);padding:40px 28px;text-align:center;box-shadow:var(--shadow)}
 .err h2{font-size:18px;color:var(--pine);margin-bottom:10px}
 .err p{font-size:13px;color:var(--muted)}
+/* 対応状況（見せる） */
+.response{padding:22px 28px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#f4faf8,#fff)}
+.resp-head{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:800;padding:7px 16px;border-radius:999px;color:#fff}
+.resp-doing{background:linear-gradient(135deg,#e0a100,#c78a00)}
+.resp-done{background:linear-gradient(135deg,#25b598,#159079)}
+.resp-recheck{background:linear-gradient(135deg,#0e3a33,#12564a)}
+.resp-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7}
+.resp-comment{margin-top:12px;padding:14px 16px;background:#fff;border:1px solid var(--line);border-left:3px solid var(--mint);border-radius:10px;font-size:13.5px;color:var(--ink);line-height:1.8}
+.resp-date{font-size:11.5px;color:var(--muted);margin-top:10px}
 </style>
 </head>
 <body>
@@ -83,7 +92,7 @@ h1,h2,h3{font-family:"Noto Serif JP",serif}
   <div id="app"><div class="err"><p style="color:#9fb3ac">読み込み中…</p></div></div>
 
   <div class="foot">
-    キレインは、第三者の覆面調査で店舗の清潔さを認証するサービスです。<br>
+    キレインは、第三者が店舗の清潔さを現地で確認し、店舗の改善対応を見える化するサービスです。<br>
     <a href="./index.html">キレインについて →</a>
   </div>
 </div>
@@ -92,6 +101,23 @@ h1,h2,h3{font-family:"Noto Serif JP",serif}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const qp=new URLSearchParams(location.search);
+
+// 店舗の対応状況（公開）＝「見せる」。ネガの生声は公開しない。
+const RESP_META={
+  responding:{label:'お客様の声に対応中',    cls:'resp-doing',  icon:'🔧'},
+  responded: {label:'店舗対応済み',          cls:'resp-done',   icon:'✓'},
+  rechecked: {label:'キレイン再チェック済み', cls:'resp-recheck',icon:'✓✓'}
+};
+function respHtml(r){
+  const m=RESP_META[r.status]; if(!m) return '';
+  const dl=[r.updatedAt?('最終確認：'+r.updatedAt):'', (r.status==='rechecked'&&r.recheckedAt)?('キレイン再チェック：'+r.recheckedAt):''].filter(Boolean).join('　·　');
+  return '<div class="response">'+
+    '<div class="resp-head '+m.cls+'">'+m.icon+' '+m.label+'</div>'+
+    '<div class="resp-note">この店舗は、お客様からの清潔フィードバックに向き合っています。ネガティブな内容は公開せず、対応状況だけを見える化しています。</div>'+
+    (r.comment?('<div class="resp-comment">「'+esc(r.comment)+'」</div>'):'')+
+    (dl?('<div class="resp-date">'+esc(dl)+'</div>'):'')+
+  '</div>';
+}
 
 function stars(v){ // 4.8 -> ★★★★★ (簡易)
   const full=Math.round(v);
@@ -102,8 +128,8 @@ function render(data){
   const id=qp.get('s');
   const store=(data.stores||[]).find(s=>s.id===id);
   if(!store){
-    $('#app').innerHTML=`<div class="err"><h2>認証情報が見つかりません</h2>
-      <p>このQRコードに対応する認証店舗が見つかりませんでした。<br>店舗の方は キレイン運営（${esc(data.meta.contact)}）までご連絡ください。</p></div>`;
+    $('#app').innerHTML=`<div class="err"><h2>チェック情報が見つかりません</h2>
+      <p>このQRコードに対応する店舗が見つかりませんでした。<br>店舗の方は キレイン運営（${esc(data.meta.contact)}）までご連絡ください。</p></div>`;
     return;
   }
   const rk=data.ranks[store.rank]||data.ranks.silver;
@@ -119,10 +145,10 @@ function render(data){
   $('#app').innerHTML=`
     <div class="cert">
       <div class="cert-top" style="background:${rk.grad}">
-        <div class="cert-verified">✓ キレイン認証済み</div>
+        <div class="cert-verified">✓ キレイン清潔チェック済み</div>
         <div class="cert-seal" style="background:rgba(255,255,255,.10)">
           <span class="rk">${esc(rk.label)}</span>
-          <span class="lv">KIREIN CERTIFIED</span>
+          <span class="lv">KIREIN CHECKED</span>
         </div>
         <div class="cert-rank-sub">「${esc(rk.sub)}」</div>
       </div>
@@ -136,22 +162,23 @@ function render(data){
       </div>
       <div class="trust">
         ${store.cleaning?`<div class="t wide"><span class="clean">🧽 ${esc(store.cleaning)}</span></div>`:''}
-        <div class="t"><div class="k">認証日</div><div class="v">${esc(store.certifiedAt)}</div></div>
+        <div class="t"><div class="k">現地チェック日</div><div class="v">${esc(store.certifiedAt)}</div></div>
         <div class="t"><div class="k">次回調査</div><div class="v">${esc(store.nextAudit)}</div></div>
         <div class="t"><div class="k">調査主体</div><div class="v">${esc(store.auditor)}</div></div>
         <div class="t"><div class="k">累計評価</div><div class="v">${esc(store.reviews)} 件</div></div>
       </div>
       ${store.message?`<div class="msg">${esc(store.message)}</div>`:''}
+      ${store.response?respHtml(store.response):''}
     </div>
 
     <div class="about">
-      <h3>キレイン認証とは？</h3>
-      <p>キレインは、飲食・接客店舗の「清潔さ」を第三者の覆面調査で評価し、基準を満たした店舗のみを認証するサービスです。この認証は、店舗が継続的に清潔を保っている証です。</p>
+      <h3>キレイン清潔チェックとは？</h3>
+      <p>キレインは、飲食・接客店舗の「清潔さ」を第三者が現地で確認し、基準を満たした店舗に「チェック済み」を発行するサービスです。さらに、お客様の清潔フィードバックに店舗がどう対応したかを見える化します。</p>
       <div class="items">
         ${items.map(it=>`<span class="chip">${esc(it)}</span>`).join('')}
       </div>
     </div>`;
-  document.title=`${store.name}｜キレイン認証（${rk.label}）`;
+  document.title=`${store.name}｜キレイン清潔チェック済み（${rk.label}）`;
 }
 
 fetch('stores.json?cb='+Date.now()).then(r=>r.json()).then(render).catch(()=>{

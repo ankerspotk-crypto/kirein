@@ -113,8 +113,8 @@ function summaryHtml(data,store){
     return `<div class="score-row"><span class="lbl">${esc(it)}</span><div class="score-bar"><span style="width:${(v/5*100).toFixed(0)}%"></span></div><span class="v">${v.toFixed(1)}</span></div>`;}).join('');
   return `<div class="card">
     <div class="st-head">
-      <div class="st-seal" style="background:${RANKC[store.rank]||'#999'}"><span class="rk">${esc(rk.label)}</span><span class="lv">CERT</span></div>
-      <div class="st-info"><div class="nm">${esc(store.name)}</div><div class="meta">${esc(store.area)}　·　${esc(store.category)}　·　認証 ${esc(store.certifiedAt)}</div></div>
+      <div class="st-seal" style="background:${RANKC[store.rank]||'#999'}"><span class="rk">${esc(rk.label)}</span><span class="lv">CHECKED</span></div>
+      <div class="st-info"><div class="nm">${esc(store.name)}</div><div class="meta">${esc(store.area)}　·　${esc(store.category)}　·　チェック済 ${esc(store.certifiedAt)}</div></div>
     </div>
   </div>
   <div class="card">
@@ -123,8 +123,28 @@ function summaryHtml(data,store){
       <div class="kpis">
         <div class="kpi"><div class="n">${esc(store.reviews||0)}</div><div class="l">累計評価</div></div>
         <div class="kpi"><div class="n">${esc(store.nextAudit||'—')}</div><div class="l">次回調査</div></div>
-        <div class="kpi"><div class="n">${esc(rk.label)}</div><div class="l">認証ランク</div></div>
+        <div class="kpi"><div class="n">${esc(rk.label)}</div><div class="l">チェックランク</div></div>
       </div>
+    </div>
+  </div>`;
+}
+
+function responseCardHtml(store){
+  const r=store.response||{};
+  const RESP={responding:{l:'お客様の声に対応中',c:'#c78a00'},responded:{l:'店舗対応済み',c:'#159079'},rechecked:{l:'キレイン再チェック済み',c:'#0e3a33'}};
+  const cur=RESP[r.status];
+  const body='店舗名：'+store.name+'\n新しい対応コメント：\n（例：手洗い場の清掃頻度を見直しました）\n\n※このコメントは店舗ページ（お客様が見るページ）に公開されます。ネガティブな口コミの中身・投稿者情報は公開されません。';
+  const mailto='mailto:kirein.jp@gmail.com?subject='+encodeURIComponent('キレイン 対応状況の更新（'+store.name+'）')+'&body='+encodeURIComponent(body);
+  return `<div class="card">
+    <div class="card-h"><h2>お客様への「対応状況」</h2><span class="sub">店舗ページに公開</span></div>
+    <div class="card-b">
+      ${cur?`<div style="display:inline-flex;align-items:center;gap:8px;font-weight:800;color:#fff;background:${cur.c};padding:7px 16px;border-radius:999px;font-size:14px">✓ ${cur.l}</div>`:`<div style="color:var(--muted);font-size:13px">まだ対応状況は公開されていません。改善対応を報告すると、店舗ページに反映できます。</div>`}
+      ${r.comment?`<div style="margin-top:14px;padding:14px 16px;background:var(--bg);border-left:3px solid var(--mint);border-radius:10px;font-size:13.5px;line-height:1.8">「${esc(r.comment)}」</div>`:''}
+      ${r.updatedAt?`<div style="font-size:11.5px;color:var(--muted);margin-top:10px">最終確認：${esc(r.updatedAt)}</div>`:''}
+      <div style="margin-top:16px;padding:14px;background:#f6f9f8;border-radius:10px;font-size:12px;color:var(--muted);line-height:1.8">
+        公開されるのは「対応した」という事実とあなたのコメントだけ。<b>ネガティブな口コミの中身・投稿者情報は公開されません。</b>晒しではなく、改善に向き合う姿勢を見える化します。
+      </div>
+      <div style="margin-top:12px"><a class="btn btn-mint" href="${mailto}">📝 対応コメントを更新する</a></div>
     </div>
   </div>`;
 }
@@ -140,10 +160,11 @@ function lockedHtml(store,detailCounts,keyErr){
       </div>
       <div class="lock-cta">
         <div class="ico">🔑</div>
-        <h3>“なぜその点数か” を、あなただけに。</h3>
-        <p>覆面調査の具体的な指摘・改善点と、お客様が実際に感じた「どこが惜しいか」。<br>口コミに書かれる前に、直せます。</p>
-        <div class="price">¥3,000<span> / 月</span></div>
-        <div style="margin-top:16px"><a class="btn btn-mint" href="mailto:kirein.jp@gmail.com?subject=キレイン%20詳細プランの申し込み&body=店舗名・認証IDをご記入ください。解除キーをお送りします。">📩 詳細プランを申し込む</a></div>
+        <h3>“なぜその点数か・何を直すか” を、あなただけに。</h3>
+        <p>第三者が実際に来店する現地診断で、具体的な指摘・優先改善リストと、お客様が感じた「どこが惜しいか」を。<br>悪い口コミになる前に、直せます。</p>
+        <div class="price">現地診断 ¥39,800<span> / 回</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">その後の閲覧継続はライト ¥3,000 / 月</div>
+        <div style="margin-top:16px"><a class="btn btn-mint" href="mailto:kirein.jp@gmail.com?subject=キレイン%20現地診断の申し込み&body=店舗名・店舗IDをご記入ください。日程を調整します。">📩 現地診断を申し込む</a></div>
         <div class="keyrow">
           <input id="keyin" placeholder="解除キーを入力" value="${esc(qp.get('key')||'')}" />
           <button onclick="applyKey()">解除</button>
@@ -186,6 +207,7 @@ async function main(){
   if(!store){ $('#app').innerHTML='<div class="err"><h2>店舗が見つかりません</h2><p>dashboard.html?s=&lt;店舗ID&gt; で開いてください。</p></div>'; return; }
 
   let html=summaryHtml(data,store);
+  html+=responseCardHtml(store);
   const tc=store.teaser?{imp:store.teaser.improvements,fb:store.teaser.feedback}:null;
   const key=qp.get('key');
   if(key){

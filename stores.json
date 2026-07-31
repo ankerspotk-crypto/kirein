@@ -26,7 +26,13 @@
       "auditor": "キレイン公認 覆面調査員",
       "reviews": 96,
       "teaser": { "improvements": 4, "feedback": 5 },
-      "message": "清潔な空間で、特別な一皿を。"
+      "message": "清潔な空間で、特別な一皿を。",
+      "response": {
+        "status": "rechecked",
+        "comment": "お客様の声をもとに、手洗い場の清掃頻度を見直し、トイレ床面のチェックを強化しました。",
+        "updatedAt": "2026-07",
+        "recheckedAt": "2026-07"
+      }
     }
   ]
 }
