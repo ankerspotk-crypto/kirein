@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>キレイン｜あなたの店の"清潔リスク"を無料診断</title>
+<meta name="description" content="Googleに書かれた既存の口コミを第三者の目で解析。お客様が口に出さなかった清潔面の"惜しい所"を、無料で可視化します。" />
+<style>
+  :root{
+    --pine:#0e3a33; --mint:#1ea487; --mint-soft:#e7f5f0; --gold:#c2a25f;
+    --ink:#1c2b28; --muted:#6b7d78; --line:#e4ece9; --bg:#f6f9f8; --radius:18px;
+    --risk-low:#1ea487; --risk-mid:#e0a100; --risk-high:#c0392b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:680px;margin:0 auto;padding:0 20px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  .brand{font-weight:800;color:var(--pine);font-size:18px;letter-spacing:.5px}
+  .brand small{font-weight:500;color:var(--muted);font-size:11px;margin-left:6px}
+  .back{font-size:13px;color:var(--muted);text-decoration:none}
+  .hero{background:linear-gradient(155deg,#0e3a33,#08221e);color:#fff;padding:46px 0 40px;text-align:center}
+  .hero h1{font-size:26px;font-weight:800;margin:0 0 12px;line-height:1.5}
+  .hero h1 .ac{color:#7fe0c6}
+  .hero p{font-size:14px;color:#cfe3dd;margin:0 auto;max-width:520px}
+  .search-card{background:#fff;border-radius:var(--radius);box-shadow:0 20px 50px -24px rgba(14,58,51,.4);padding:22px;margin:-26px auto 0;position:relative;z-index:5}
+  .search-label{font-size:13px;font-weight:700;color:var(--pine);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  #storeInput{width:100%;padding:14px 16px;border:1.5px solid var(--line);border-radius:12px;font-size:15px;font-family:inherit;outline:none;transition:.2s}
+  #storeInput:focus{border-color:var(--mint);box-shadow:0 0 0 3px var(--mint-soft)}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:8px}
+  .section{padding:28px 0 60px}
+  .loading{text-align:center;color:var(--muted);font-size:13px;padding:30px}
+  .spinner{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--mint);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* 診断結果カード */
+  .diag{background:#fff;border-radius:var(--radius);border:1px solid var(--line);overflow:hidden;margin-top:22px;box-shadow:0 16px 40px -26px rgba(14,58,51,.3)}
+  .diag-head{padding:20px 22px;border-bottom:1px solid var(--line)}
+  .diag-name{font-size:18px;font-weight:800;color:var(--ink)}
+  .diag-meta{font-size:12px;color:var(--muted);margin-top:3px}
+  .risk-row{display:flex;align-items:center;gap:18px;padding:22px;flex-wrap:wrap}
+  .risk-badge{flex-shrink:0;width:120px;height:120px;border-radius:50%;display:grid;place-items:center;color:#fff;text-align:center}
+  .risk-badge .rl{font-size:26px;font-weight:800;line-height:1}
+  .risk-badge .rt{font-size:11px;opacity:.9;margin-top:3px}
+  .risk-low{background:linear-gradient(150deg,#25b598,#159079)}
+  .risk-mid{background:linear-gradient(150deg,#f0b429,#d99400)}
+  .risk-high{background:linear-gradient(150deg,#e05a4d,#b32c1e)}
+  .risk-desc{flex:1;min-width:200px}
+  .risk-desc h3{margin:0 0 6px;font-size:15px;color:var(--pine)}
+  .risk-desc p{margin:0;font-size:13px;color:var(--muted);line-height:1.7}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 22px 20px}
+  .stat{background:var(--bg);border-radius:12px;padding:14px;text-align:center}
+  .stat .n{font-size:26px;font-weight:800;color:var(--pine);line-height:1}
+  .stat .l{font-size:11px;color:var(--muted);margin-top:5px}
+  /* ロック(ペイウォール) */
+  .locked{margin:0 22px 22px;border:1.5px dashed var(--line);border-radius:14px;padding:18px;position:relative;background:#fbfdfc}
+  .locked h4{margin:0 0 12px;font-size:13px;color:var(--pine);display:flex;align-items:center;gap:6px}
+  .locked-item{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+  .locked-pri{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;flex-shrink:0;margin-top:2px}
+  .pri-high{color:#c0392b;background:#fff5f5}
+  .pri-mid{color:#a5822f;background:#fdf6e6}
+  .locked-text{font-size:12.5px;color:var(--ink);filter:blur(4.5px);user-select:none;flex:1}
+  .paywall{text-align:center;padding:16px 0 4px}
+  .paywall .price{font-size:15px;font-weight:800;color:var(--pine)}
+  .paywall .price b{font-size:22px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:700;text-decoration:none;border-radius:12px;padding:14px 22px;font-size:14px;cursor:pointer;border:none}
+  .btn-mint{background:var(--mint);color:#06231d}
+  .btn-pine{background:var(--pine);color:#fff}
+  .btn-block{width:100%}
+  .fallback{background:#fff8e1;border-radius:14px;padding:20px;text-align:center;margin-top:22px}
+  .fallback h3{margin:0 0 8px;font-size:15px;color:#7a6000}
+  .fallback p{margin:0 0 14px;font-size:13px;color:#8a7220}
+  .footnote{font-size:11px;color:var(--muted);text-align:center;margin-top:20px;line-height:1.8}
+  @media(max-width:520px){ .stat-grid{grid-template-columns:1fr} .risk-badge{width:100px;height:100px} }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Kirein <small>キレイン</small></div>
+    <a class="back" href="./business.html">← 店舗オーナーの方へ</a>
+  </div>
+
+  <div class="hero">
+    <div class="wrap">
+      <h1>あなたの店の<span class="ac">"清潔リスク"</span>を、<br>無料で診断します。</h1>
+      <p>Googleに書かれた既存の口コミを、第三者の目で解析。お客様が口に出さなかった清潔面の"惜しい所"を可視化します。<b style="color:#fff">集客サービスではありません。</b></p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="search-card">
+      <div class="search-label">🔍 店名を入力してください</div>
+      <input id="storeInput" type="text" placeholder="例：〇〇食堂 名古屋 栄" autocomplete="off" />
+      <div class="hint">店名を入れて候補から選ぶと、その場で無料診断が始まります。訪問は不要です。</div>
+    </div>
+
+    <div class="section">
+      <div id="result"></div>
+    </div>
+  </div>
+
+<script>
+/* ========== 清潔リスク自動診断エンジン ========== */
+const CLEAN_AREAS = [
+  { key:'トイレ',        re:/トイレ|お手洗|化粧室|洗面|便所/ },
+  { key:'におい・換気',  re:/にお|匂|臭|ニオイ|香り|煙|タバコ|たばこ|喫煙|換気|空気/ },
+  { key:'席・テーブル',  re:/席|テーブル|座席|シート|カウンター/ },
+  { key:'床・店内',      re:/床|店内|通路|壁|内装|入口|階段/ },
+  { key:'食器・グラス',  re:/食器|グラス|コップ|お皿|カトラリー|箸|おしぼり/ },
+  { key:'手洗い・衛生',  re:/手洗|石鹸|石けん|消毒|衛生/ },
+];
+// ネガティブ（清潔面の不満）
+const NEG_RE = /汚[いくれ]|きたな|不潔|くさ[いく]|臭[いく]|ベタベタ|べたつ|ぬめ|ほこり|埃|カビ|かび|虫|ゴキブリ|コバエ|ハエ|散らか|落ちて(い|た)|古[くび].{0,3}汚|残念|気にな|清掃.{0,5}(され|してな|不足|甘)|掃除.{0,5}(され|してな|不足|甘)/;
+// ポジティブ（清潔面の好評）
+const POS_RE = /(きれい|綺麗|キレイ|清潔|ピカピカ|衛生的|行き届|清掃.{0,4}(行き届|きちんと|されて)|掃除.{0,4}(行き届|きちんと|されて)|手入れ.{0,3}(され|行き届)|清潔感)/;
+// においは肯定文脈もあるので、明確なネガ語がある時だけ減点
+function classifyReview(text){
+  if(!text) return null;
+  const hasArea = CLEAN_AREAS.some(a => a.re.test(text));
+  const neg = NEG_RE.test(text);
+  const pos = POS_RE.test(text);
+  // 清潔に無関係なレビューは除外（エリア語もネガ/ポジ語も無い）
+  if(!hasArea && !neg && !pos) return null;
+  const area = (CLEAN_AREAS.find(a => a.re.test(text)) || {}).key || '清潔全般';
+  // ネガ優先（不満は埋もれさせない）。両方あればネガ扱い。
+  if(neg) return { s:'neg', area, text };
+  if(pos) return { s:'pos', area, text };
+  // エリア語のみ（中立）は弱シグナルとして無視
+  return null;
+}
+function diagnose(place){
+  const reviews = place.reviews || [];
+  const findings = reviews.map(r => classifyReview(r.text)).filter(Boolean);
+  const negs = findings.filter(f => f.s==='neg');
+  const poss = findings.filter(f => f.s==='pos');
+  const rating = place.rating || 0;
+  const total  = place.user_ratings_total || 0;
+
+  // リスク判定：ネガ言及数 と Google評価 の合わせ技
+  let level;
+  if(negs.length >= 2 || (rating && rating < 3.6 && negs.length >= 1)) level = 'high';
+  else if(negs.length === 1 || (rating && rating < 4.1)) level = 'mid';
+  else level = 'low';
+
+  return {
+    level,
+    negCount: negs.length,
+    posCount: poss.length,
+    analyzed: reviews.length,
+    rating, total,
+    improvements: negs,   // 詳細はロック
+  };
+}
+
+/* ========== 描画 ========== */
+const RISK_META = {
+  low:  { cls:'risk-low',  label:'低',  title:'今のところ、清潔リスクは低め。',      desc:'既存の口コミでは、清潔面の目立った不満は見当たりませんでした。ただし「言われていない不満」は口コミには出にくいもの。詳細プランで、実際のお客様の声を継続的に拾えます。' },
+  mid:  { cls:'risk-mid',  label:'中',  title:'いくつか"惜しい所"のサインがあります。',  desc:'清潔面で気になる声、または評価の伸び悩みが見られます。放置すると悪い口コミに繋がりやすい水準です。どこを直せばいいか、詳細プランで具体的に。' },
+  high: { cls:'risk-high', label:'高',  title:'清潔面が、来店体験の足を引っぱっています。', desc:'複数の口コミで清潔面の不満が指摘されています。悪い口コミがさらに増える前に、優先的に手を打つべき状態です。改善点の詳細をご確認ください。' },
+};
+function esc(s){ return (s||'').replace(/[<>&]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+function renderDiag(place){
+  const d = diagnose(place);
+  const el = document.getElementById('result');
+
+  if(d.analyzed === 0){
+    el.innerHTML = `
+      <div class="fallback">
+        <h3>まだ口コミが少なく、自動診断ができません</h3>
+        <p>このお店はGoogleの口コミが少ないため、既存データからの診断ができませんでした。<br>先着30店舗限定で、無料の現地診断も受け付けています。</p>
+        <a class="btn btn-pine" href="./business.html#apply">無料の現地診断を申し込む</a>
+      </div>`;
+    return;
+  }
+
+  const m = RISK_META[d.level];
+  // ロック内の改善点プレビュー（本文はブラー）
+  const lockedItems = (d.improvements.length ? d.improvements : [{area:'清潔全般'},{area:'トイレ'}])
+    .slice(0,3).map((f,i)=>`
+      <div class="locked-item">
+        <span class="locked-pri ${i===0?'pri-high':'pri-mid'}">${i===0?'優先度 高':'要確認'} ・ ${esc(f.area)}</span>
+        <span class="locked-text">${esc((f.text||'お客様が指摘した具体的な清潔面の改善ポイントがここに入ります').slice(0,42))}…</span>
+      </div>`).join('');
+
+  el.innerHTML = `
+    <div class="diag">
+      <div class="diag-head">
+        <div class="diag-name">${esc(place.name)}</div>
+        <div class="diag-meta">${esc(place.formatted_address||'')} ｜ Google評価 ★${(d.rating||'-')}（${d.total.toLocaleString()}件）</div>
+      </div>
+      <div class="risk-row">
+        <div class="risk-badge ${m.cls}"><div><div class="rl">${m.label}</div><div class="rt">清潔リスク</div></div></div>
+        <div class="risk-desc"><h3>${m.title}</h3><p>${m.desc}</p></div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><div class="n">${d.analyzed}</div><div class="l">解析した既存口コミ</div></div>
+        <div class="stat"><div class="n">${d.negCount}</div><div class="l">清潔面で気になる声</div></div>
+      </div>
+      <div class="locked">
+        <h4>🔒 改善ポイント：${Math.max(d.negCount,1)}件（詳細はロック中）</h4>
+        ${lockedItems}
+        <div class="paywall">
+          <div class="price">詳細プランで、"なぜ・何を直すか"が全部見えます — <b>¥3,000</b>/月</div>
+          <div style="font-size:11px;color:var(--muted);margin:6px 0 14px">＋アプリに集まる実際の来店客の声で、毎月自動アップデート</div>
+          <a class="btn btn-mint btn-block" href="./business.html#price">詳細プランを見る →</a>
+        </div>
+      </div>
+    </div>
+    <div class="footnote">
+      ※ 本診断はGoogleに公開されている既存の口コミ${d.analyzed}件を第三者の目で自動解析した簡易診断です。<br>
+      有料プランでは、アプリに集まる実際の来店客の清潔評価を継続的に反映します。
+    </div>`;
+}
+
+/* ========== Places 連携 ========== */
+let acService, placesService, sessionToken;
+function initDiagnose(){
+  if(!(window.google && google.maps && google.maps.places)){
+    document.getElementById('result').innerHTML =
+      '<div class="fallback"><h3>地図サービスの読み込みに失敗しました</h3><p>時間をおいて再度お試しください。</p></div>';
+    return;
+  }
+  acService = new google.maps.places.AutocompleteService();
+  placesService = new google.maps.places.PlacesService(document.createElement('div'));
+  sessionToken = new google.maps.places.AutocompleteSessionToken();
+
+  const input = document.getElementById('storeInput');
+  const ac = new google.maps.places.Autocomplete(input, {
+    fields:['place_id','name'],
+    componentRestrictions:{ country:'jp' },
+    types:['establishment'],
+  });
+  ac.addListener('place_changed', ()=>{
+    const p = ac.getPlace();
+    if(p && p.place_id) runDiagnosis(p.place_id);
+  });
+}
+function runDiagnosis(placeId){
+  const el = document.getElementById('result');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>既存の口コミを解析しています…</div>';
+  placesService.getDetails({
+    placeId,
+    fields:['name','formatted_address','rating','user_ratings_total','reviews'],
+    language:'ja',
+  }, (place, status)=>{
+    if(status === google.maps.places.PlacesServiceStatus.OK && place){
+      renderDiag(place);
+      el.scrollIntoView({ behavior:'smooth', block:'start' });
+    } else {
+      el.innerHTML = '<div class="fallback"><h3>お店の情報を取得できませんでした</h3><p>別の店名でお試しいただくか、無料の現地診断をご利用ください。</p><a class="btn btn-pine" href="./business.html#apply">無料の現地診断を申し込む</a></div>';
+    }
+  });
+}
+window.initDiagnose = initDiagnose;
+</script>
+<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDRfloVijkhdUhF9v_DG7O3JV17Fqd9V7w&libraries=places&language=ja&callback=initDiagnose"></script>
+</body>
+</html>

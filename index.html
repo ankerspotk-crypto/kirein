@@ -879,7 +879,7 @@ function submitQuickVote(shopId){
 
   const negItems = [...(document.querySelectorAll('#qvNegList [name="qneg"]:checked')||[])].map(c => c.value);
   const comment  = document.getElementById('qvComment')?.value || '';
-  const shop     = STORES.find(s => s.id === shopId);
+  const shop     = STORES.find(s => String(s.id) === String(shopId));
   const isClean  = _quickVoteType === 'clean';
   const pts      = isClean ? 50 : (negItems.length === 0 ? 100 : negItems.length >= 3 ? 150 : 120);
 
@@ -970,6 +970,16 @@ function updateChallengeUI(total){
   const fill = document.getElementById('challenge-fill');
   if(el)   el.textContent  = (total || 0).toLocaleString();
   if(fill) fill.style.width = Math.min(100, ((total||0) / 1000) * 100) + '%';
+  // 立ち上げ期は「0 / 1,000」の"空っぽ感"を出さない（店舗オーナーの信頼を損ねないため）
+  const low  = (total || 0) < 10;
+  const wrap = document.querySelector('.challenge-count-wrap');
+  const bar  = document.querySelector('.challenge-section .progress-bar');
+  const sub  = document.querySelector('.challenge-sub');
+  if(wrap) wrap.style.display = low ? 'none' : 'flex';
+  if(bar)  bar.style.display  = low ? 'none' : '';
+  if(sub)  sub.textContent    = low
+    ? 'あなたの10秒評価が、この街の"最初の記録"になります。'
+    : 'あなたの10秒評価が、次の人のお店選びを助けます';
 }
 
 function renderAreaGauges(stats){
@@ -1030,7 +1040,7 @@ function renderUnreviewedStores(){
         <div style="font-weight:700;color:var(--pine);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.area} ・ まだ誰も評価していません</div>
       </div>
-      <button onclick="proceedToPostForm(${s.id})" class="btn sm mint" style="white-space:nowrap;padding:8px 14px;font-size:12px;flex-shrink:0">10秒評価</button>
+      <button onclick="proceedToPostForm('${s.id}')" class="btn sm mint" style="white-space:nowrap;padding:8px 14px;font-size:12px;flex-shrink:0">10秒評価</button>
     </div>
   `).join('');
 }
@@ -1240,7 +1250,7 @@ function initGooglePlacesAutocomplete(){
         const resultsDiv = document.getElementById('autocompleteResults');
         resultsDiv.innerHTML = localResults.map(s => {
           const distLabel = s.dist != null ? `<span style="color:var(--mint);font-weight:700">${s.dist.toFixed(1)}km</span>` : '';
-          return `<div style="padding:10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:12px;transition:.2s;background:#f9f9f9;display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='var(--mint-soft)'" onmouseout="this.style.background='#f9f9f9'" onclick="selectStoreForPost(${s.id})"><div>${s.name}<br><span style="color:var(--muted);font-size:11px">${s.address || s.area}</span></div>${distLabel}</div>`;
+          return `<div style="padding:10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:12px;transition:.2s;background:#f9f9f9;display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='var(--mint-soft)'" onmouseout="this.style.background='#f9f9f9'" onclick="selectStoreForPost('${s.id}')"><div>${s.name}<br><span style="color:var(--muted);font-size:11px">${s.address || s.area}</span></div>${distLabel}</div>`;
         }).join('');
         resultsDiv.style.display = 'block';
         return;
@@ -1361,7 +1371,7 @@ function filterStores(){
 
   const listContainer = document.getElementById('storeListContainer');
   listContainer.innerHTML = filtered.length ?
-    filtered.map(s => `<div class="card store-item" style="margin-bottom:10px;cursor:pointer" onclick="proceedToPostForm(${s.id})">${s.name} (${s.area})</div>`).join('')
+    filtered.map(s => `<div class="card store-item" style="margin-bottom:10px;cursor:pointer" onclick="proceedToPostForm('${s.id}')">${s.name} (${s.area})</div>`).join('')
     : '<div style="text-align:center;color:var(--muted);padding:20px">該当する店舗がありません</div>';
 }
 
@@ -1384,7 +1394,7 @@ function useGPS(){
       // 距離付きで表示
       const listContainer = document.getElementById('storeListContainer');
       listContainer.innerHTML = storesWithDistance.map(s =>
-        `<div class="card store-item" style="margin-bottom:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="proceedToPostForm(${s.id})">
+        `<div class="card store-item" style="margin-bottom:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="proceedToPostForm('${s.id}')">
           <div>${s.name} (${s.area})</div>
           <div style="font-size:11px;color:var(--muted)">${s.distance.toFixed(1)}km</div>
         </div>`
@@ -1445,12 +1455,12 @@ function createNewStore(shopName, lat, lng){
 function checkPostStatus(shopId){
   const currentUid = window.auth?.currentUser?.uid || getUserData()?.uid;
   const posts = getPosts()
-    .filter(p => p.shop_id === shopId && (!currentUid || p.user_uid === currentUid))
+    .filter(p => String(p.shop_id) === String(shopId) && (!currentUid || p.user_uid === currentUid))
     .sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
   if(posts.length === 0){
     // このお店への全ユーザーの投稿数もチェック（= 本当の初投稿か）
-    const allPosts = getPosts().filter(p => p.shop_id === shopId);
+    const allPosts = getPosts().filter(p => String(p.shop_id) === String(shopId));
     return { type:'first', points: getCampaignMultiplier() * 50, isVirginStore: allPosts.length === 0 };
   }
 
@@ -1484,7 +1494,7 @@ function calcTierPoints(tier, status){
 }
 
 function proceedToPostForm(shopId){
-  const shop = STORES.find(s => s.id === shopId);
+  const shop = STORES.find(s => String(s.id) === String(shopId));
   if(!shop) return;
 
   const status = checkPostStatus(shopId);
@@ -1569,13 +1579,13 @@ function proceedToPostForm(shopId){
       <div id="quickVoteUI">
         <div style="text-align:center;font-size:16px;font-weight:700;color:var(--pine);margin-bottom:18px">このトイレ、どうでしたか？</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-          <button id="qvClean" onclick="selectQuickVote('clean',${shopId})"
+          <button id="qvClean" onclick="selectQuickVote('clean','${shopId}')"
             style="padding:20px 12px;border:3px solid var(--mint);border-radius:16px;background:var(--mint-soft);cursor:pointer;text-align:center;transition:.15s;width:100%">
             <div style="font-size:32px;margin-bottom:6px">✨</div>
             <div style="font-size:15px;font-weight:700;color:var(--pine)">きれいだった！</div>
             <div style="font-size:11px;color:var(--muted);margin-top:4px">+50pt</div>
           </button>
-          <button id="qvDirty" onclick="selectQuickVote('dirty',${shopId})"
+          <button id="qvDirty" onclick="selectQuickVote('dirty','${shopId}')"
             style="padding:20px 12px;border:3px solid #ddd;border-radius:16px;background:#fff;cursor:pointer;text-align:center;transition:.15s;width:100%">
             <div style="font-size:32px;margin-bottom:6px">😟</div>
             <div style="font-size:15px;font-weight:700;color:#c0392b">気になるところが…</div>
@@ -1592,7 +1602,7 @@ function proceedToPostForm(shopId){
         </div>
         <div id="qvSubmit" style="display:none">
           <textarea id="qvComment" rows="2" placeholder="ひとことコメント（任意）" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:13px;resize:none;margin-bottom:10px"></textarea>
-          <button onclick="submitQuickVote(${shopId})" class="btn mint" style="width:100%;justify-content:center;padding:14px;font-size:15px">投稿する <span id="qvPts">+50pt</span></button>
+          <button onclick="submitQuickVote('${shopId}')" class="btn mint" style="width:100%;justify-content:center;padding:14px;font-size:15px">投稿する <span id="qvPts">+50pt</span></button>
           <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:8px">匿名投稿・ネガティブ情報は一般非公開</div>
         </div>
         <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">
@@ -1612,19 +1622,19 @@ function proceedToPostForm(shopId){
       <div style="margin-bottom:20px">
         <div style="font-size:12px;font-weight:700;color:var(--pine);margin-bottom:10px">投稿レベルを選んでください</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-          <button type="button" id="tier-simple" onclick="selectTier('simple',${shopId})"
+          <button type="button" id="tier-simple" onclick="selectTier('simple','${shopId}')"
             style="padding:12px 6px;border:2px solid var(--mint);border-radius:10px;background:var(--mint);color:#061e36;cursor:pointer;text-align:center">
             <div style="font-size:18px;margin-bottom:4px">⚡</div>
             <div style="font-size:11px;font-weight:700">かんたん</div>
             <div style="font-size:13px;font-weight:700;color:var(--pine);margin-top:2px">+${calcTierPoints('simple',status)}pt</div>
           </button>
-          <button type="button" id="tier-detail" onclick="selectTier('detail',${shopId})"
+          <button type="button" id="tier-detail" onclick="selectTier('detail','${shopId}')"
             style="padding:12px 6px;border:2px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;text-align:center">
             <div style="font-size:18px;margin-bottom:4px">📋</div>
             <div style="font-size:11px;font-weight:700">くわしく</div>
             <div style="font-size:13px;font-weight:700;color:var(--pine);margin-top:2px">+${calcTierPoints('detail',status)}pt</div>
           </button>
-          <button type="button" id="tier-photo" onclick="selectTier('photo',${shopId})"
+          <button type="button" id="tier-photo" onclick="selectTier('photo','${shopId}')"
             style="padding:12px 6px;border:2px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;text-align:center;position:relative">
             ${status.isVirginStore ? '<div style="position:absolute;top:-8px;right:-4px;background:#e67e00;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:999px">2倍!</div>' : ''}
             <div style="font-size:18px;margin-bottom:4px">📷</div>
@@ -1638,7 +1648,7 @@ function proceedToPostForm(shopId){
       </div>
 
       <!-- フォーム（レベル選択後に表示） -->
-      <form id="postFormSubmit" onsubmit="submitPost(event,${shopId})" style="display:none">
+      <form id="postFormSubmit" onsubmit="submitPost(event,'${shopId}')" style="display:none">
         <input type="hidden" id="postTier" value="simple">
 
         <!-- かんたん：においと便座 -->
@@ -1821,7 +1831,7 @@ async function submitPost(e, shopId){
     if(status.type === 'blocked'){ alert(`あと${status.waitDays}日後に投稿できます`); return; }
 
     const tierPts = calcTierPoints(tier, status);
-    const shop = STORES.find(s => s.id === shopId);
+    const shop = STORES.find(s => String(s.id) === String(shopId));
 
     // 写真アップロード（Firebase Storage）
     let photoUrl = null;
@@ -1984,7 +1994,7 @@ function showMyPage(){
       <div class="mypage-card">
         <h2>📝 あなたの投稿</h2>
         ${userPosts.length ? userPosts.map(p => {
-          const shop = STORES.find(s => s.id === p.shop_id);
+          const shop = STORES.find(s => String(s.id) === String(p.shop_id));
           const date = new Date(p.created_at);
           return `<div class="post-item">
             <div class="st">
@@ -2190,7 +2200,7 @@ function goBackToStep1(){
 }
 
 function selectStoreForPost(storeId){
-  const store = STORES.find(s => s.id === storeId);
+  const store = STORES.find(s => String(s.id) === String(storeId));
   if(!store) return;
 
   currentSelectedStore = store;
@@ -2418,7 +2428,7 @@ function renderNearbyList(stores, container){
       <div style="padding:12px 14px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:#fff;transition:.18s"
            onmouseover="this.style.background='var(--mint-soft)';this.style.borderColor='var(--mint)'"
            onmouseout="this.style.background='#fff';this.style.borderColor='var(--line)'"
-           onclick="selectStoreForPost(${s.id})">
+           onclick="selectStoreForPost('${s.id}')">
         <div style="min-width:0;flex:1">
           <div style="font-weight:700;color:var(--ink);font-size:14px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">${s.name}${newBadge}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.address || s.area || ''}</div>
@@ -2469,7 +2479,7 @@ async function useGPSForPost(){
   }
 
   listContainer.innerHTML = storesWithDistance.map(s =>
-    `<div style="padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:#fff;transition:.2s" onmouseover="this.style.background='var(--mint-soft)'" onmouseout="this.style.background='#fff'" onclick="selectStoreForPost(${s.id})">
+    `<div style="padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:#fff;transition:.2s" onmouseover="this.style.background='var(--mint-soft)'" onmouseout="this.style.background='#fff'" onclick="selectStoreForPost('${s.id}')">
       <div>
         <div style="font-weight:700;color:var(--ink);font-size:13px">${s.name}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.address || s.area}</div>
@@ -2933,7 +2943,7 @@ const RANK_CERT_COLOR={black:"#9b59b6",platinum:"#c2a25f",gold:"#27ae60",silver:
 
 // 投稿データからリアルタイムでランクを自動計算
 function calcStoreRank(shopId){
-  const posts = getPosts().filter(p => p.shop_id === shopId);
+  const posts = getPosts().filter(p => String(p.shop_id) === String(shopId));
   if(!posts.length) return 'bronze';
   const count = posts.length;
   const avg = posts.reduce((s,p) => s + ((p.cleanliness_rating||0)+(p.air_rating||0))/2, 0) / count;
@@ -3170,7 +3180,7 @@ function goToPost(storeId){
 
 function getKireinPosts(shopId){
   // このお店の Kirein 投稿を取得
-  return getPosts().filter(p => p.shop_id === shopId);
+  return getPosts().filter(p => String(p.shop_id) === String(shopId));
 }
 
 function calcScore(shopId){
@@ -3199,7 +3209,9 @@ function render(){
     const extra = allResults.length > LIMIT
       ? `<span style="font-size:11px;color:var(--muted);margin-left:6px">（近い順${LIMIT}件表示）</span>`
       : '';
-    countEl.innerHTML = `<b id="cnt">${allResults.length}</b> 件の"きれいな店"${extra}`;
+    countEl.innerHTML = allResults.length > 0
+      ? `<b id="cnt">${allResults.length}</b> 件の"きれいな店"${extra}`
+      : `<b id="cnt" style="font-size:15px">名古屋のトイレを、きれいな順に。</b>`;
   }
 
   const list = document.getElementById('list');
@@ -3552,7 +3564,7 @@ function evaluateStore(storeId){
     showLoginModal();
     return;
   }
-  const shop = STORES.find(s => s.id === storeId);
+  const shop = STORES.find(s => String(s.id) === String(storeId));
 
   // 店舗の座標がない場合はGPSチェックをスキップ
   if(!shop?.lat || !shop?.lng){

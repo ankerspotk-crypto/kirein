@@ -85,7 +85,7 @@ header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.95);backdro
 .mock-bar span{display:block;height:100%;background:var(--mint)}
 
 /* 料金 */
-.plans{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:44px;max-width:760px;margin-inline:auto}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:44px;max-width:1080px;margin-inline:auto}
 .plan{border-radius:var(--radius);padding:36px 32px;border:1px solid var(--line);background:#fff}
 .plan.featured{border:2px solid var(--pine);position:relative;box-shadow:0 24px 60px -22px rgba(14,58,51,.3)}
 .plan .badge-plan{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--pine);color:#fff;font-size:11px;font-weight:700;padding:5px 18px;border-radius:999px;white-space:nowrap}
@@ -153,9 +153,9 @@ footer{background:#061a17;color:#7eada4;padding:40px 0 22px;font-size:12px}
   <div class="wrap">
     <span class="hero-tag">飲食・接客店舗向け ｜ 清潔の"改善点"が見えるダッシュボード</span>
     <h1>点数は、<span class="ac">無料</span>。<br>“なぜその点数か”は、あなただけに。</h1>
-    <p class="lead">お客様は、不満を口に出さずに去ります。キレインは覆面調査とお客様の声で清潔さを認証（<b style="color:#fff">無料</b>）。そして——実際にどこが「惜しい」と感じられたか、どこを直せば次に繋がるか。その<b style="color:#fff">改善点</b>を、月¥3,000であなただけに。口コミに書かれる前に、直せます。</p>
+    <p class="lead">お客様は、不満を口に出さずに去ります。キレインは既存の口コミとお客様の声で清潔さを可視化・認証（<b style="color:#fff">無料</b>）。そして——実際にどこが「惜しい」と感じられたか、どこを直せば次に繋がるか。その<b style="color:#fff">改善点</b>を、月¥3,000であなただけに。口コミに書かれる前に、直せます。</p>
     <div class="hero-cta">
-      <a href="#apply" class="btn btn-mint">初回の覆面調査は無料 →</a>
+      <a href="./diagnose.html" class="btn btn-mint">無料で清潔リスクを見る →</a>
       <a href="#deliver" class="btn btn-ghost">改善点の見本を見る</a>
     </div>
     <div class="hero-note">※ 名古屋・錦／栄エリアから順次。まずは1店舗から。</div>
@@ -183,10 +183,10 @@ footer{background:#061a17;color:#7eada4;padding:40px 0 22px;font-size:12px}
     <h2 class="sec-title">認証して、見せて、守る。</h2>
     <p class="sec-lead">清潔さを「証明できる資産」に変える、4つの仕事。</p>
     <div class="steps">
-      <div class="step"><div class="n">01</div><h3>覆面調査で認証（無料）</h3><p>公認調査員が客として来店し、におい・トイレ・客席設備・接客衛生を採点。基準を満たせば認証。点数の付与まで無料です。</p></div>
+      <div class="step"><div class="n">01</div><h3>口コミから清潔リスクを可視化（無料）</h3><p>Googleなどの既存の口コミと来店客の声を第三者の目で解析し、におい・トイレ・客席・衛生の清潔リスクを採点。訪問を待たず、すぐ分かります。</p></div>
       <div class="step"><div class="n">02</div><h3>認証を客に見せる（無料）</h3><p>お客様がスマホで見る「認証ページ」と、店頭に貼る「認証ポスター＋QR」。清潔さが、その場で客に伝わります。</p></div>
-      <div class="step"><div class="n">03</div><h3>“改善点”が見える（¥3,000）</h3><p>ここからが本題。覆面調査の具体的な指摘と、お客様が実際に感じた「惜しい所」。何をどう直せばいいかが、あなただけに見えます。</p></div>
-      <div class="step"><div class="n">04</div><h3>毎月アップデート</h3><p>定期再調査と新しいお客様の声で、ダッシュボードは毎月更新。清潔レベルの推移と、次の一手が分かります。</p></div>
+      <div class="step"><div class="n">03</div><h3>“改善点”が見える（¥3,000）</h3><p>ここからが本題。第三者解析の具体的な指摘と、お客様が実際に感じた「惜しい所」。何をどう直せばいいかが、あなただけに見えます。</p></div>
+      <div class="step"><div class="n">04</div><h3>毎月アップデート</h3><p>アプリに集まる実際の来店客の声で、ダッシュボードは毎月自動更新。清潔レベルの推移と、次の一手が分かります。</p></div>
     </div>
   </div>
 </section>
@@ -234,21 +234,21 @@ footer{background:#061a17;color:#7eada4;padding:40px 0 22px;font-size:12px}
 <section class="sec soft" id="price">
   <div class="wrap">
     <div class="sec-tag">料金</div>
-    <h2 class="sec-title">点数は無料。改善点だけ、¥3,000。</h2>
-    <p class="sec-lead">初回の覆面調査も、認証も、客に見せる認証ページも無料。お支払いが要るのは"詳細"だけです。</p>
+    <h2 class="sec-title">点数は無料。改善点だけ、¥3,000から。</h2>
+    <p class="sec-lead">清潔リスクの可視化も、認証も、客に見せる認証ページも無料。お支払いが要るのは“なぜ・何を直すか”の詳細だけです。</p>
     <div class="plans">
       <div class="plan">
         <div class="plan-name">無料プラン <span class="rksub">まず認証を受ける</span></div>
         <div class="plan-price">¥0<span> / 月</span></div>
         <div class="plan-desc">認証されて、客に見せる。清潔さの"証明"はここまで無料で完結します。</div>
         <ul class="plan-features">
-          <li class="on">覆面調査による清潔認証</li>
+          <li class="on">既存の口コミから清潔リスク診断（自動）</li>
           <li class="on">認証ページ（客向け）＋掲示ポスターQR</li>
           <li class="on">清潔スコアの概要（点数・件数）</li>
-          <li class="off">改善点の詳細（覆面調査の指摘）</li>
+          <li class="off">改善点の詳細（なぜ・何を直すか）</li>
           <li class="off">お客様の声の中身・項目別の推移</li>
         </ul>
-        <a href="#apply" class="btn btn-pine">無料で認証を受ける</a>
+        <a href="./diagnose.html" class="btn btn-pine">無料で清潔リスクを診断</a>
       </div>
       <div class="plan featured">
         <div class="badge-plan">これがキレインの本体</div>
@@ -264,8 +264,22 @@ footer{background:#061a17;color:#7eada4;padding:40px 0 22px;font-size:12px}
         </ul>
         <a href="#apply" class="btn btn-mint">詳細プランを申し込む</a>
       </div>
+      <div class="plan">
+        <div class="plan-name">キレインPRO <span class="rksub">本気で“守る”店へ</span></div>
+        <div class="plan-price">¥9,800<span> / 月</span></div>
+        <div class="plan-desc">数字を見るだけでなく、毎月“直す”を回す。認証を資産として維持する上位プラン。</div>
+        <ul class="plan-features">
+          <li class="on">詳細プランのすべて</li>
+          <li class="on">月1回の現地覆面調査（プロ調査員）</li>
+          <li class="on">清掃チェックリスト＆スタッフ改善シート</li>
+          <li class="on">認証バッジ・QRポスターの更新</li>
+          <li class="on">店舗ページの優先表示</li>
+          <li class="on">月次改善レポート</li>
+        </ul>
+        <a href="#apply" class="btn btn-pine">PROを相談する</a>
+      </div>
     </div>
-    <p class="price-note">※ いつでも解約可能。縛り・違約金はありません。解約後は自動で無料プラン（認証は継続）に戻ります。まずは無料の初回調査から。「1日あたり¥100」で、口コミに書かれる前に手を打てます。</p>
+    <p class="price-note">※ いつでも解約可能。縛り・違約金はありません。解約後も店舗ページの過去スコアは残りますが、最新の認証バッジ・QRポスター掲示・月次改善レポートは有料プラン限定です。まずは無料の初回調査から。「1日あたり¥100」で、口コミに書かれる前に手を打てます。</p>
   </div>
 </section>
 
@@ -275,10 +289,10 @@ footer{background:#061a17;color:#7eada4;padding:40px 0 22px;font-size:12px}
     <div class="sec-tag">よくあるご質問</div>
     <h2 class="sec-title">FAQ</h2>
     <div class="faq-list">
-      <div class="faq-item"><div class="faq-q">認証されなかった場合は？ <span class="faq-arrow">▼</span></div><div class="faq-a">初回調査で基準に届かなかった場合、費用は一切かかりません。どこを改善すれば認証されるかのレポートをお渡しします。改善後の再調査も無料です。</div></div>
+      <div class="faq-item"><div class="faq-q">認証されなかった場合は？ <span class="faq-arrow">▼</span></div><div class="faq-a">初回の清潔リスク診断で基準に届かなかった場合、費用は一切かかりません。どこを直せば認証されるかのポイントをお伝えします。改善後の再診断も無料です。</div></div>
       <div class="faq-item"><div class="faq-q">掲示ポスターやQRは誰が用意する？ <span class="faq-arrow">▼</span></div><div class="faq-a">キレインが認証と同時に発行します。印刷して店頭・トイレに貼るだけ。QRをかざしたお客様は、あなたの店の認証ページを見られます。</div></div>
-      <div class="faq-item"><div class="faq-q">無料と有料（¥3,000）の違いは？ <span class="faq-arrow">▼</span></div><div class="faq-a">無料でも、認証・客に見せる認証ページ・清潔スコアの"点数"は見られます。有料（¥3,000/月）で開くのは"詳細"——覆面調査の具体的な指摘・改善点と、お客様が実際に感じた「惜しい所」の中身、項目別の推移です。「どこを直せばいいか」が分かるのが、有料プランです。</div></div>
-      <div class="faq-item"><div class="faq-q">解約はできる？ <span class="faq-arrow">▼</span></div><div class="faq-a">いつでも解約可能です。縛りや違約金はありません。認証の掲示は解約時点で終了します。</div></div>
+      <div class="faq-item"><div class="faq-q">無料と有料（¥3,000）の違いは？ <span class="faq-arrow">▼</span></div><div class="faq-a">無料でも、認証・客に見せる認証ページ・清潔スコアの"点数"は見られます。有料（¥3,000/月）で開くのは"詳細"——第三者解析の具体的な指摘・改善点と、お客様が実際に感じた「惜しい所」の中身、項目別の推移です。「どこを直せばいいか」が分かるのが、有料プランです。さらにPRO（¥9,800/月）では月1回の現地覆面調査・清掃チェックリスト・優先掲載まで付きます。</div></div>
+      <div class="faq-item"><div class="faq-q">解約はできる？ <span class="faq-arrow">▼</span></div><div class="faq-a">いつでも解約可能です。縛りや違約金はありません。解約後も店舗ページの過去スコアは残りますが、最新の認証バッジ・QRポスターの掲示・月次改善レポートは有料プラン限定になります。</div></div>
       <div class="faq-item"><div class="faq-q">どのエリアが対象？ <span class="faq-arrow">▼</span></div><div class="faq-a">現在は名古屋・錦／栄エリアを中心に順次拡大中です。エリア外の方も、まずはお問い合わせください。</div></div>
     </div>
   </div>
@@ -287,10 +301,10 @@ footer{background:#061a17;color:#7eada4;padding:40px 0 22px;font-size:12px}
 <!-- CTA -->
 <section class="cta" id="apply">
   <div class="wrap">
-    <h2>まずは、無料の覆面調査から。</h2>
-    <p>あなたの店の"本当の清潔レベル"を、第三者の目でお見せします。<br>認証されてから、お支払いが始まります。リスクはありません。</p>
-    <a href="mailto:kirein.jp@gmail.com?subject=キレイン%20認証の申し込み・相談&body=店舗名／エリア／ご希望プラン（ゴールド／ブラック）をご記入ください。" class="btn btn-mint">📩 メールで申し込む・相談する</a>
-    <div class="sub">kirein.jp@gmail.com ／ ご相談だけでも歓迎です。</div>
+    <h2>まずは、無料の清潔リスク診断から。</h2>
+    <p>お客様は、清潔面の不満を口に出さずに去ります。<br>その“無言の離脱理由”を、第三者の目で可視化します。集客サービスではありません。</p>
+    <a href="mailto:kirein.jp@gmail.com?subject=キレイン%20無料の清潔診断を申し込む&body=店舗名／エリア／ご担当者名／電話番号をご記入ください。" class="btn btn-mint">📩 無料の清潔診断を申し込む</a>
+    <div class="sub">先着30店舗 無料診断受付中 ／ ご相談だけでも歓迎です。</div>
   </div>
 </section>
 
