@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>キレイン清潔チェック済み — 清潔を、見えるように。</title>
-<meta name="description" content="この店舗はキレインの現地チェックを受け、お客様の清潔フィードバックに対応しています。" />
+<title>キレイン｜清潔の声に、向き合っています</title>
+<meta name="description" content="この店舗はキレインで公開口コミの清潔監視を受け、お客様の清潔フィードバックに対応しています。" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet" />
@@ -22,65 +22,52 @@ h1,h2,h3{font-family:"Noto Serif JP",serif}
 .logo svg{width:24px;height:24px}
 .logo b{font-family:"Noto Sans JP";font-size:13px;font-weight:700}
 
-/* チェック済みカード */
 .cert{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;position:relative}
-.cert-top{padding:34px 28px 26px;text-align:center;color:#fff;position:relative}
-.cert-seal{width:118px;height:118px;margin:0 auto 16px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  border:3px solid rgba(255,255,255,.5);box-shadow:0 10px 30px -8px rgba(0,0,0,.4);position:relative}
-.cert-seal .rk{font-family:"Noto Serif JP";font-size:23px;font-weight:700;line-height:1.1}
-.cert-seal .lv{font-size:10px;letter-spacing:.18em;opacity:.85;margin-top:3px}
-.cert-verified{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.08em;
-  background:rgba(255,255,255,.16);padding:6px 14px;border-radius:999px;margin-bottom:12px}
-.cert-h{font-size:20px;font-weight:700;line-height:1.4;margin-bottom:6px}
-.cert-sub{font-size:12.5px;opacity:.9}
-.cert-rank-sub{font-size:13px;font-weight:700;margin-top:14px;opacity:.95}
+.cert-top{padding:34px 28px 28px;text-align:center;color:#fff;background:linear-gradient(150deg,#12564a,#0e3a33)}
+.cert-seal{width:96px;height:96px;margin:0 auto 16px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  border:3px solid rgba(255,255,255,.45);box-shadow:0 10px 30px -8px rgba(0,0,0,.4);background:rgba(255,255,255,.1);font-size:42px}
+.cert-verified{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.06em;
+  background:rgba(255,255,255,.16);padding:6px 14px;border-radius:999px;margin-bottom:14px}
+.cert-h{font-size:20px;font-weight:700;line-height:1.5;margin-bottom:6px}
+.cert-sub{font-size:12.5px;opacity:.9;line-height:1.8}
 
 /* 店舗名帯 */
 .store{padding:22px 28px;text-align:center;border-bottom:1px solid var(--line)}
 .store .nm{font-family:"Noto Serif JP";font-size:21px;font-weight:700;color:var(--pine);line-height:1.4}
-.store .meta{font-size:12.5px;color:var(--muted);margin-top:6px}
+.store .meta{font-size:12.5px;color:var(--muted);margin-top:8px}
+.store .live{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--pine);background:var(--mint-soft);padding:5px 13px;border-radius:999px;margin-top:12px}
+.store .live .dot{width:7px;height:7px;border-radius:50%;background:var(--mint)}
 
-/* スコア */
-.scores{padding:24px 28px;border-bottom:1px solid var(--line)}
-.scores h3{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.04em;margin-bottom:16px;font-family:"Noto Sans JP"}
-.score-row{display:grid;grid-template-columns:78px 1fr 40px;align-items:center;gap:12px;margin-bottom:13px}
-.score-row .lbl{font-size:13px;font-weight:500}
-.score-bar{height:8px;background:var(--mint-soft);border-radius:99px;overflow:hidden}
-.score-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--mint),#1ea487);border-radius:99px}
-.score-row .v{font-family:"Cormorant Garamond",serif;font-size:19px;font-weight:700;color:var(--pine);text-align:right}
+/* 監視の説明 */
+.watch{padding:24px 28px;border-bottom:1px solid var(--line)}
+.watch h3{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.04em;margin-bottom:14px;font-family:"Noto Sans JP"}
+.watch .row{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
+.watch .row:last-child{margin-bottom:0}
+.watch .ic{width:34px;height:34px;flex:none;border-radius:10px;background:var(--mint-soft);display:flex;align-items:center;justify-content:center;font-size:17px}
+.watch .tx .t{font-size:13.5px;font-weight:700;color:var(--ink)}
+.watch .tx .s{font-size:12px;color:var(--muted);margin-top:2px}
 
-/* トラスト行 */
-.trust{padding:22px 28px;display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;border-bottom:1px solid var(--line)}
-.trust .t{}
-.trust .t .k{font-size:11px;color:var(--muted);letter-spacing:.04em;margin-bottom:3px}
-.trust .t .v{font-size:13.5px;font-weight:700;color:var(--ink)}
-.trust .t.wide{grid-column:1/-1}
-.clean{display:inline-flex;align-items:center;gap:7px;background:var(--mint-soft);color:var(--pine);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:10px;margin-top:2px}
-
-/* メッセージ */
-.msg{padding:24px 28px;text-align:center;font-size:13.5px;color:var(--muted);line-height:2;font-style:normal}
-.msg::before{content:"“";font-family:"Noto Serif JP";font-size:32px;color:var(--mint);display:block;line-height:.4;margin-bottom:8px}
+/* 対応状況（見せる） */
+.response{padding:24px 28px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#f4faf8,#fff)}
+.resp-head{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:800;padding:8px 17px;border-radius:999px;color:#fff}
+.resp-doing{background:linear-gradient(135deg,#e0a100,#c78a00)}
+.resp-done{background:linear-gradient(135deg,#25b598,#159079)}
+.resp-recheck{background:linear-gradient(135deg,#0e3a33,#12564a)}
+.resp-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.8}
+.resp-comment{margin-top:14px;padding:15px 17px;background:#fff;border:1px solid var(--line);border-left:3px solid var(--mint);border-radius:10px;font-size:13.5px;color:var(--ink);line-height:1.9}
+.resp-comment::before{content:"“";color:var(--mint);font-weight:700}
+.resp-comment::after{content:"”";color:var(--mint);font-weight:700}
+.resp-date{font-size:11.5px;color:var(--muted);margin-top:10px}
 
 /* フッター説明 */
 .about{margin-top:20px;background:var(--card);border-radius:var(--radius);padding:24px 26px;box-shadow:var(--shadow)}
 .about h3{font-size:14px;color:var(--pine);margin-bottom:10px}
-.about p{font-size:12.5px;color:var(--muted);line-height:1.9}
-.about .items{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.about .chip{font-size:11.5px;background:var(--mint-soft);color:var(--pine);font-weight:700;padding:6px 12px;border-radius:999px}
-.foot{text-align:center;padding:24px 0 4px;font-size:11px;color:#9fb3ac}
-.foot a{color:var(--mint);font-weight:700}
+.about p{font-size:12.5px;color:var(--muted);line-height:1.95}
+.foot{text-align:center;padding:24px 0 4px;font-size:11px;color:#9fb3ac;line-height:1.9}
+.foot a{color:var(--mint);font-weight:700;text-decoration:none}
 .err{background:var(--card);border-radius:var(--radius);padding:40px 28px;text-align:center;box-shadow:var(--shadow)}
 .err h2{font-size:18px;color:var(--pine);margin-bottom:10px}
 .err p{font-size:13px;color:var(--muted)}
-/* 対応状況（見せる） */
-.response{padding:22px 28px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#f4faf8,#fff)}
-.resp-head{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:800;padding:7px 16px;border-radius:999px;color:#fff}
-.resp-doing{background:linear-gradient(135deg,#e0a100,#c78a00)}
-.resp-done{background:linear-gradient(135deg,#25b598,#159079)}
-.resp-recheck{background:linear-gradient(135deg,#0e3a33,#12564a)}
-.resp-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7}
-.resp-comment{margin-top:12px;padding:14px 16px;background:#fff;border:1px solid var(--line);border-left:3px solid var(--mint);border-radius:10px;font-size:13.5px;color:var(--ink);line-height:1.8}
-.resp-date{font-size:11.5px;color:var(--muted);margin-top:10px}
 </style>
 </head>
 <body>
@@ -92,7 +79,8 @@ h1,h2,h3{font-family:"Noto Serif JP",serif}
   <div id="app"><div class="err"><p style="color:#9fb3ac">読み込み中…</p></div></div>
 
   <div class="foot">
-    キレインは、第三者が店舗の清潔さを現地で確認し、店舗の改善対応を見える化するサービスです。<br>
+    キレインは、公開されている口コミの清潔さを第三者が監視し、店舗の改善対応を見える化するサービスです。<br>
+    清潔さそのものを保証・認証するものではありません。<br>
     <a href="./index.html">キレインについて →</a>
   </div>
 </div>
@@ -101,89 +89,86 @@ h1,h2,h3{font-family:"Noto Serif JP",serif}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const qp=new URLSearchParams(location.search);
+const API='/api';
 
-// 店舗の対応状況（公開）＝「見せる」。ネガの生声は公開しない。
 const RESP_META={
   responding:{label:'お客様の声に対応中',    cls:'resp-doing',  icon:'🔧'},
   responded: {label:'店舗対応済み',          cls:'resp-done',   icon:'✓'},
   rechecked: {label:'キレイン再チェック済み', cls:'resp-recheck',icon:'✓✓'}
 };
+function fmtDate(iso){
+  if(!iso) return '';
+  const d=new Date(iso); if(isNaN(d)) return esc(iso);
+  const p=n=>('0'+n).slice(-2);
+  return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate());
+}
 function respHtml(r){
   const m=RESP_META[r.status]; if(!m) return '';
-  const dl=[r.updatedAt?('最終確認：'+r.updatedAt):'', (r.status==='rechecked'&&r.recheckedAt)?('キレイン再チェック：'+r.recheckedAt):''].filter(Boolean).join('　·　');
   return '<div class="response">'+
     '<div class="resp-head '+m.cls+'">'+m.icon+' '+m.label+'</div>'+
-    '<div class="resp-note">この店舗は、お客様からの清潔フィードバックに向き合っています。ネガティブな内容は公開せず、対応状況だけを見える化しています。</div>'+
-    (r.comment?('<div class="resp-comment">「'+esc(r.comment)+'」</div>'):'')+
-    (dl?('<div class="resp-date">'+esc(dl)+'</div>'):'')+
+    '<div class="resp-note">この店舗は、お客様からの清潔フィードバックに向き合っています。ネガティブな口コミの中身・投稿者情報は公開せず、対応状況だけを見える化しています。</div>'+
+    (r.comment?('<div class="resp-comment">'+esc(r.comment)+'</div>'):'')+
+    (r.updated?('<div class="resp-date">最終更新：'+esc(fmtDate(r.updated))+'</div>'):'')+
   '</div>';
 }
 
-function stars(v){ // 4.8 -> ★★★★★ (簡易)
-  const full=Math.round(v);
-  return '★★★★★'.slice(0,full)+'☆☆☆☆☆'.slice(0,5-full);
-}
-
-function render(data){
-  const id=qp.get('s');
-  const store=(data.stores||[]).find(s=>s.id===id);
-  if(!store){
-    $('#app').innerHTML=`<div class="err"><h2>チェック情報が見つかりません</h2>
-      <p>このQRコードに対応する店舗が見つかりませんでした。<br>店舗の方は キレイン運営（${esc(data.meta.contact)}）までご連絡ください。</p></div>`;
-    return;
-  }
-  const rk=data.ranks[store.rank]||data.ranks.silver;
-  const items=data.items||Object.keys(store.scores||{});
-  const scoreHtml=items.map(it=>{
-    const v=(store.scores||{})[it]||0;
-    return `<div class="score-row"><span class="lbl">${esc(it)}</span>
-      <div class="score-bar"><span style="width:${(v/5*100).toFixed(0)}%"></span></div>
-      <span class="v">${v.toFixed(1)}</span></div>`;
-  }).join('');
-  const light = store.rank==='black' ? '#fff' : (store.rank==='gold' ? '#3a2f10' : '#fff');
+function render(st){
+  const name=st.name||'この店舗';
+  const r=(st.response&&RESP_META[st.response.status])?st.response:null;
+  const lastc=fmtDate(st.last_checked);
 
   $('#app').innerHTML=`
     <div class="cert">
-      <div class="cert-top" style="background:${rk.grad}">
-        <div class="cert-verified">✓ 清潔の声に対応しています</div>
-        <div class="cert-seal" style="background:rgba(255,255,255,.10)">
-          <span class="rk">${esc(rk.label)}</span>
-          <span class="lv">KIREIN CHECKED</span>
-        </div>
-        <div class="cert-rank-sub">「${esc(rk.sub)}」</div>
+      <div class="cert-top">
+        <div class="cert-verified">✓ 清潔の声に、向き合っています</div>
+        <div class="cert-seal">🛡️</div>
+        <div class="cert-h">この店舗は、清潔の声を<br>見逃しません。</div>
+        <div class="cert-sub">Googleの公開口コミをキレインが自動でチェックし、<br>お客様の清潔フィードバックへの対応を見える化しています。</div>
       </div>
       <div class="store">
-        <div class="nm">${esc(store.name)}</div>
-        <div class="meta">${esc(store.area)}　·　${esc(store.category)}</div>
+        <div class="nm">${esc(name)}</div>
+        <span class="live"><span class="dot"></span>キレイン見張り 稼働中${lastc?'　·　最終チェック '+lastc:''}</span>
       </div>
-      <div class="scores">
-        <h3>清潔評価（5点満点）</h3>
-        ${scoreHtml}
+      <div class="watch">
+        <h3>キレインがしていること</h3>
+        <div class="row"><div class="ic">👀</div><div class="tx"><div class="t">気づく</div><div class="s">公開口コミの中の「清潔に関する声」を24時間、自動でチェック。</div></div></div>
+        <div class="row"><div class="ic">🔧</div><div class="tx"><div class="t">直す</div><div class="s">気になる声に、この店舗が向き合い対応します。</div></div></div>
+        <div class="row"><div class="ic">🤝</div><div class="tx"><div class="t">見せる</div><div class="s">対応した事実だけを、あなたにこうしてお見せしています。</div></div></div>
       </div>
-      <div class="trust">
-        ${store.cleaning?`<div class="t wide"><span class="clean">🧽 ${esc(store.cleaning)}</span></div>`:''}
-        <div class="t"><div class="k">現地チェック日</div><div class="v">${esc(store.certifiedAt)}</div></div>
-        <div class="t"><div class="k">次回調査</div><div class="v">${esc(store.nextAudit)}</div></div>
-        <div class="t"><div class="k">調査主体</div><div class="v">${esc(store.auditor)}</div></div>
-        <div class="t"><div class="k">累計評価</div><div class="v">${esc(store.reviews)} 件</div></div>
-      </div>
-      ${store.message?`<div class="msg">${esc(store.message)}</div>`:''}
-      ${store.response?respHtml(store.response):''}
+      ${r?respHtml(r):`<div class="response"><div class="resp-note" style="margin-top:0">この店舗は清潔の声の見張りを始めました。お客様の声への対応状況は、これからここに表示されます。</div></div>`}
     </div>
 
     <div class="about">
-      <h3>キレイン清潔チェックとは？</h3>
-      <p>キレインは、飲食・接客店舗の「清潔さ」を第三者が現地で確認し、基準を満たした店舗に「チェック済み」を発行するサービスです。さらに、お客様の清潔フィードバックに店舗がどう対応したかを見える化します。</p>
-      <div class="items">
-        ${items.map(it=>`<span class="chip">${esc(it)}</span>`).join('')}
-      </div>
+      <h3>キレインとは？</h3>
+      <p>キレインは、飲食・接客店舗に寄せられる<b>公開口コミの「清潔さ」を第三者として監視</b>し、店舗がその声にどう対応したかを見える化するサービスです。清潔さそのものを保証・認証するものではなく、ネガティブな口コミの中身や投稿者情報を公開することもありません。見える化するのは「向き合っている」という姿勢だけです。</p>
     </div>`;
-  document.title=`${store.name}｜キレイン清潔チェック済み（${rk.label}）`;
+  document.title=`${name}｜キレイン｜清潔の声に、向き合っています`;
 }
 
-fetch('stores.json?cb='+Date.now()).then(r=>r.json()).then(render).catch(()=>{
-  $('#app').innerHTML=`<div class="err"><h2>読み込みに失敗しました</h2><p>通信環境をご確認のうえ、再度お試しください。</p></div>`;
-});
+function showErr(){
+  $('#app').innerHTML=`<div class="err"><h2>チェック情報が見つかりません</h2>
+    <p>このQRコード／リンクに対応する店舗が見つかりませんでした。<br>店舗の方は キレイン運営（kirein.jp@gmail.com）までご連絡ください。</p></div>`;
+}
+
+async function main(){
+  const id=qp.get('s');
+  if(!id){ showErr(); return; }
+  const mock=qp.get('mock');
+  if(mock){ return render(MOCK(mock,id)); }
+  try{
+    const res=await fetch(API+'/store?s='+encodeURIComponent(id));
+    const j=await res.json();
+    if(res.ok && j && j.status==='active'){ render(j); }
+    else showErr();
+  }catch(e){
+    $('#app').innerHTML=`<div class="err"><h2>読み込みに失敗しました</h2><p>通信環境をご確認のうえ、再度お試しください。</p></div>`;
+  }
+}
+function MOCK(mode,id){
+  return {id,name:'サンプル食堂 栄店',status:'active',last_checked:'2026-07-31T18:20:00+09:00',
+    response: mode==='resp'?{status:'responded',comment:'手洗い場の清掃頻度を1日3回に見直しました。',updated:'2026-07-30T00:00:00+09:00'}:null};
+}
+main();
 </script>
 </body>
 </html>

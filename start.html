@@ -76,6 +76,9 @@ function initStart(){
     // Payment Link に client_reference_id=place_id を渡す → webhookで店を紐づけ→監視開始
     go.href = PAYMENT_LINK + '?client_reference_id=' + encodeURIComponent(p.place_id);
     go.classList.add('on');
+    // 決済後の橋渡し：戻り先 dashboard.html が ?s= 無しでも今の店を復元できるよう退避
+    go.onclick = ()=>{ try{ localStorage.setItem('kirein_store',
+      JSON.stringify({ id:p.place_id, name:p.name||'', addr:p.formatted_address||'' })); }catch(e){} };
   });
 }
 window.initStart = initStart;

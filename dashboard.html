@@ -13,7 +13,7 @@
   --pine:#0e3a33;--pine-deep:#082722;--mint:#25b598;--mint-soft:#e6f5f1;
   --gold:#c2a25f;--ink:#182320;--muted:#5d6b66;--line:#e4eae7;
   --bg:#f6f9f8;--card:#fff;--radius:18px;--shadow:0 16px 44px -24px rgba(14,58,51,.3);
-  --red:#c0392b;--red-soft:#fff5f5;
+  --red:#c0392b;--red-soft:#fff5f5;--amber:#c78a00;--amber-soft:#fdf6e6;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"Noto Sans JP",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
@@ -32,62 +32,66 @@ h1,h2,h3{font-family:"Noto Serif JP",serif}
 
 /* 店ヘッダ */
 .st-head{padding:22px;display:flex;align-items:center;gap:16px}
-.st-seal{width:64px;height:64px;flex:none;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;border:2px solid rgba(255,255,255,.5)}
-.st-seal .rk{font-family:"Noto Serif JP";font-size:13px;font-weight:700;line-height:1}
-.st-seal .lv{font-size:7px;letter-spacing:.1em;opacity:.85;margin-top:2px}
+.st-seal{width:60px;height:60px;flex:none;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;background:linear-gradient(135deg,var(--mint),#159079)}
+.st-seal .ico{font-size:24px}
+.st-info{flex:1}
 .st-info .nm{font-family:"Noto Serif JP";font-size:18px;font-weight:700;color:var(--pine)}
 .st-info .meta{font-size:12px;color:var(--muted);margin-top:3px}
+.badge-live{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:#fff;background:var(--mint);padding:4px 12px;border-radius:999px;margin-top:6px}
+.badge-live .dot{width:7px;height:7px;border-radius:50%;background:#c6ffe9;box-shadow:0 0 0 0 rgba(198,255,233,.7);animation:pulse 1.8s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(198,255,233,.7)}70%{box-shadow:0 0 0 7px rgba(198,255,233,0)}100%{box-shadow:0 0 0 0 rgba(198,255,233,0)}}
 
-/* スコア */
-.score-row{display:grid;grid-template-columns:80px 1fr 40px;align-items:center;gap:12px;margin-bottom:12px}
-.score-row:last-child{margin-bottom:0}
-.score-row .lbl{font-size:13px;font-weight:500}
-.score-bar{height:8px;background:var(--mint-soft);border-radius:99px;overflow:hidden}
-.score-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--mint),#1ea487);border-radius:99px}
-.score-row .v{font-family:"Cormorant Garamond",serif;font-size:18px;font-weight:700;color:var(--pine);text-align:right}
-.kpis{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
-.kpi{flex:1;min-width:90px;background:var(--bg);border-radius:12px;padding:12px 14px;text-align:center}
-.kpi .n{font-family:"Cormorant Garamond",serif;font-size:24px;font-weight:700;color:var(--pine)}
-.kpi .l{font-size:10.5px;color:var(--muted);margin-top:2px}
+/* アラート */
+.alert{border-left:3px solid var(--red);background:var(--red-soft);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.alert .top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.alert .area{font-size:11px;font-weight:700;color:var(--red);background:#fff;border:1px solid #f2c9c2;padding:2px 10px;border-radius:999px}
+.alert .date{font-size:11px;color:var(--muted);margin-left:auto}
+.alert .q{font-size:13.5px;line-height:1.7;color:var(--ink)}
+.alert .q::before{content:"“";color:#e0a99f;font-weight:700}
+.alert .q::after{content:"”";color:#e0a99f;font-weight:700}
+.good{text-align:center;padding:8px 0}
+.good .ico{font-size:30px}
+.good .t{font-size:14px;font-weight:700;color:var(--pine);margin-top:6px}
+.good .s{font-size:12px;color:var(--muted);margin-top:4px}
 
-/* ロック */
-.lock{position:relative}
-.lock-teaser{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.lock-teaser .t{background:var(--bg);border-radius:12px;padding:16px;text-align:center}
-.lock-teaser .t .n{font-family:"Cormorant Garamond",serif;font-size:30px;font-weight:700;color:var(--pine)}
-.lock-teaser .t .l{font-size:12px;color:var(--muted)}
-.lock-cta{margin-top:18px;background:linear-gradient(150deg,var(--pine-deep),#0b2c27);color:#fff;border-radius:14px;padding:24px 22px;text-align:center}
-.lock-cta .ico{font-size:26px}
-.lock-cta h3{font-size:17px;margin:8px 0 6px}
-.lock-cta p{font-size:12.5px;color:#c2d6d0;line-height:1.8;margin-bottom:16px}
-.lock-cta .price{font-family:"Cormorant Garamond",serif;font-size:30px;font-weight:700}
-.lock-cta .price span{font-size:13px;font-family:"Noto Sans JP";color:#9fc4ba}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 26px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:inherit;text-decoration:none;transition:.2s}
-.btn-mint{background:var(--mint);color:#062019}.btn-mint:hover{background:#1ea487}
-.keyrow{margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-.keyrow input{font-family:inherit;font-size:13px;padding:11px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;width:180px;outline:none}
-.keyrow input::placeholder{color:#9fc4ba}
-.keyrow button{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:10px;padding:11px 16px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer}
-.keyrow button:hover{background:rgba(255,255,255,.26)}
-.keyerr{color:#ffb4a8;font-size:12px;margin-top:10px}
+/* 対応フォーム */
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:var(--pine);margin-bottom:8px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{flex:1;min-width:120px;font-family:inherit;font-size:13px;font-weight:700;padding:11px 10px;border-radius:10px;border:1.5px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;transition:.15s}
+.seg button.on{border-color:var(--mint);background:var(--mint-soft);color:var(--pine)}
+textarea{width:100%;font-family:inherit;font-size:14px;line-height:1.7;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;outline:none;resize:vertical;min-height:96px;transition:.2s}
+textarea:focus{border-color:var(--mint);box-shadow:0 0 0 3px var(--mint-soft)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 26px;border-radius:999px;font-size:13.5px;font-weight:700;cursor:pointer;border:none;font-family:inherit;text-decoration:none;transition:.2s}
+.btn-mint{background:var(--mint);color:#062019;width:100%}.btn-mint:hover{background:#1ea487}
+.btn-mint:disabled{opacity:.5;cursor:default}
+.hint{font-size:12px;color:var(--muted);line-height:1.8;margin-top:12px;background:var(--bg);border-radius:10px;padding:12px 14px}
+.hint b{color:var(--pine)}
+.saved{font-size:12.5px;font-weight:700;color:var(--mint);margin-top:10px;text-align:center;min-height:18px}
+.curresp{margin-bottom:16px;padding:14px 16px;background:var(--mint-soft);border-radius:10px}
+.curresp .st{font-size:13px;font-weight:800;color:var(--pine)}
+.curresp .cm{font-size:13px;color:var(--ink);margin-top:6px;line-height:1.7}
+.curresp .dt{font-size:11px;color:var(--muted);margin-top:6px}
 
-/* 詳細（解除後） */
-.imp{border-left:3px solid var(--line);padding:2px 0 2px 14px;margin-bottom:16px}
-.imp.high{border-color:var(--red)}.imp.mid{border-color:var(--gold)}.imp.low{border-color:var(--mint)}
-.imp .badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 9px;border-radius:999px;margin-bottom:6px}
-.imp.high .badge{background:var(--red-soft);color:var(--red)}
-.imp.mid .badge{background:#fdf6e6;color:#a5822f}
-.imp.low .badge{background:var(--mint-soft);color:var(--pine)}
-.imp .pt{font-size:13.5px;font-weight:700;line-height:1.6}
-.imp .impact{font-size:12px;color:var(--muted);margin-top:4px}
-.fb{padding:12px 14px;border-radius:10px;margin-bottom:9px;font-size:13px;line-height:1.65}
-.fb.neg{background:var(--red-soft);border-left:3px solid #e88}
-.fb.pos{background:var(--mint-soft);border-left:3px solid var(--mint)}
-.fb .m{font-size:11px;color:var(--muted);margin-top:4px}
-.unlocked-note{background:var(--mint-soft);color:var(--pine);font-size:12px;font-weight:700;padding:10px 16px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+/* 公開ページ */
+.sharerow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.shareurl{flex:1;min-width:200px;font-family:inherit;font-size:12.5px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copybtn{background:var(--pine);color:#fff;border:none;border-radius:10px;padding:11px 16px;font-family:inherit;font-weight:700;font-size:12.5px;cursor:pointer}
+
+/* オンボーディング / 準備中 */
+.hero{background:linear-gradient(150deg,var(--pine-deep),#0b2c27);color:#fff;border-radius:var(--radius);padding:34px 26px;text-align:center;box-shadow:var(--shadow)}
+.hero .ico{font-size:30px}
+.hero h2{font-size:19px;margin:10px 0 8px}
+.hero p{font-size:13px;color:#c2d6d0;line-height:1.9;margin-bottom:18px}
+.hero .price{font-family:"Cormorant Garamond",serif;font-size:34px;font-weight:700}
+.hero .price span{font-size:13px;font-family:"Noto Sans JP";color:#9fc4ba}
+.hero .btn{background:var(--mint);color:#062019;margin-top:16px}
+.spin{width:34px;height:34px;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;margin:6px auto 0;animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
 .err{background:var(--card);border-radius:var(--radius);padding:40px 24px;text-align:center;box-shadow:var(--shadow)}
 .err h2{color:var(--pine);font-size:18px;margin-bottom:8px}.err p{color:var(--muted);font-size:13px}
-.foot{text-align:center;padding:20px 0;font-size:11px;color:#9fb3ac}
+.foot{text-align:center;padding:20px 0;font-size:11px;color:#9fb3ac;line-height:1.9}
+.foot a{color:var(--mint);font-weight:700;text-decoration:none}
 </style>
 </head>
 <body>
@@ -97,131 +101,204 @@ h1,h2,h3{font-family:"Noto Serif JP",serif}
     Kirein <b>キレイン</b><span class="tag">店舗ダッシュボード</span>
   </div>
   <div id="app"><div class="err"><p style="color:#9fb3ac">読み込み中…</p></div></div>
-  <div class="foot">キレイン ｜ 清潔を、見えるように。 ／ お問い合わせ kirein.jp@gmail.com</div>
+  <div class="foot">
+    キレイン ｜ 公開口コミの清潔監視と、対応の見える化。<br>
+    解約はStripeのメールから／お問い合わせ <a href="mailto:kirein.jp@gmail.com">kirein.jp@gmail.com</a>
+  </div>
 </div>
 
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const qp=new URLSearchParams(location.search);
-const RANKC={silver:'linear-gradient(135deg,#c7d0cd,#9aa5a2)',gold:'linear-gradient(135deg,#e3c986,#b5934c)',platinum:'linear-gradient(135deg,#8fd6df,#4a99a4)',black:'linear-gradient(135deg,#2b3a36,#0e1614)'};
+const API='/api';
+const LS_KEY='kirein_store';   // start.html が決済前に place_id を退避
 
-function summaryHtml(data,store){
-  const rk=(data.ranks||{})[store.rank]||{label:'—',sub:''};
-  const items=data.items||Object.keys(store.scores||{});
-  const rows=items.map(it=>{const v=(store.scores||{})[it]||0;
-    return `<div class="score-row"><span class="lbl">${esc(it)}</span><div class="score-bar"><span style="width:${(v/5*100).toFixed(0)}%"></span></div><span class="v">${v.toFixed(1)}</span></div>`;}).join('');
-  return `<div class="card">
-    <div class="st-head">
-      <div class="st-seal" style="background:${RANKC[store.rank]||'#999'}"><span class="rk">${esc(rk.label)}</span><span class="lv">CHECKED</span></div>
-      <div class="st-info"><div class="nm">${esc(store.name)}</div><div class="meta">${esc(store.area)}　·　${esc(store.category)}　·　チェック済 ${esc(store.certifiedAt)}</div></div>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-h"><h2>清潔スコア（概要）</h2><span class="sub">無料で表示</span></div>
-    <div class="card-b">${rows}
-      <div class="kpis">
-        <div class="kpi"><div class="n">${esc(store.reviews||0)}</div><div class="l">累計評価</div></div>
-        <div class="kpi"><div class="n">${esc(store.nextAudit||'—')}</div><div class="l">次回調査</div></div>
-        <div class="kpi"><div class="n">${esc(rk.label)}</div><div class="l">チェックランク</div></div>
-      </div>
-    </div>
-  </div>`;
+// 決済直後の橋渡し：?s= が無ければ直近に選んだ店を復元
+function localPlace(){
+  try{ return JSON.parse(localStorage.getItem(LS_KEY)||'null'); }catch(e){ return null; }
+}
+function storeId(){
+  return qp.get('s') || (localPlace()||{}).id || '';
 }
 
-function responseCardHtml(store){
-  const r=store.response||{};
-  const RESP={responding:{l:'お客様の声に対応中',c:'#c78a00'},responded:{l:'店舗対応済み',c:'#159079'},rechecked:{l:'キレイン再チェック済み',c:'#0e3a33'}};
-  const cur=RESP[r.status];
-  const body='店舗名：'+store.name+'\n新しい対応コメント：\n（例：手洗い場の清掃頻度を見直しました）\n\n※このコメントは店舗ページ（お客様が見るページ）に公開されます。ネガティブな口コミの中身・投稿者情報は公開されません。';
-  const mailto='mailto:kirein.jp@gmail.com?subject='+encodeURIComponent('キレイン 対応状況の更新（'+store.name+'）')+'&body='+encodeURIComponent(body);
-  return `<div class="card">
-    <div class="card-h"><h2>お客様への「対応状況」</h2><span class="sub">店舗ページに公開</span></div>
-    <div class="card-b">
-      ${cur?`<div style="display:inline-flex;align-items:center;gap:8px;font-weight:800;color:#fff;background:${cur.c};padding:7px 16px;border-radius:999px;font-size:14px">✓ ${cur.l}</div>`:`<div style="color:var(--muted);font-size:13px">まだ対応状況は公開されていません。改善対応を報告すると、店舗ページに反映できます。</div>`}
-      ${r.comment?`<div style="margin-top:14px;padding:14px 16px;background:var(--bg);border-left:3px solid var(--mint);border-radius:10px;font-size:13.5px;line-height:1.8">「${esc(r.comment)}」</div>`:''}
-      ${r.updatedAt?`<div style="font-size:11.5px;color:var(--muted);margin-top:10px">最終確認：${esc(r.updatedAt)}</div>`:''}
-      <div style="margin-top:16px;padding:14px;background:#f6f9f8;border-radius:10px;font-size:12px;color:var(--muted);line-height:1.8">
-        公開されるのは「対応した」という事実とあなたのコメントだけ。<b>ネガティブな口コミの中身・投稿者情報は公開されません。</b>晒しではなく、改善に向き合う姿勢を見える化します。
-      </div>
-      <div style="margin-top:12px"><a class="btn btn-mint" href="${mailto}">📝 対応コメントを更新する</a></div>
-    </div>
-  </div>`;
-}
-
-function lockedHtml(store,detailCounts,keyErr){
-  const imp=detailCounts?detailCounts.imp:'—', fb=detailCounts?detailCounts.fb:'—';
-  return `<div class="card lock">
-    <div class="card-h"><h2>🔒 改善点・お客様の声（詳細）</h2><span class="sub">有料</span></div>
-    <div class="card-b">
-      <div class="lock-teaser">
-        <div class="t"><div class="n">${imp}</div><div class="l">改善点の指摘</div></div>
-        <div class="t"><div class="n">${fb}</div><div class="l">お客様の声</div></div>
-      </div>
-      <div class="lock-cta">
-        <div class="ico">🔑</div>
-        <h3>“なぜその点数か・何を直すか” を、あなただけに。</h3>
-        <p>第三者が実際に来店する現地診断で、具体的な指摘・優先改善リストと、お客様が感じた「どこが惜しいか」を。<br>悪い口コミになる前に、直せます。</p>
-        <div class="price">現地診断 ¥39,800<span> / 回</span></div>
-        <div style="font-size:12px;color:var(--muted);margin-top:6px">その後の閲覧継続はライト ¥3,000 / 月</div>
-        <div style="margin-top:16px"><a class="btn btn-mint" href="mailto:kirein.jp@gmail.com?subject=キレイン%20現地診断の申し込み&body=店舗名・店舗IDをご記入ください。日程を調整します。">📩 現地診断を申し込む</a></div>
-        <div class="keyrow">
-          <input id="keyin" placeholder="解除キーを入力" value="${esc(qp.get('key')||'')}" />
-          <button onclick="applyKey()">解除</button>
-        </div>
-        ${keyErr?`<div class="keyerr">キーが正しくありません。ご確認ください。</div>`:''}
-      </div>
-    </div>
-  </div>`;
-}
-
-function detailHtml(d){
-  const imps=(d.improvements||[]).map(i=>`<div class="imp ${esc(i.priority)}"><span class="badge">${i.priority==='high'?'優先度 高':i.priority==='mid'?'優先度 中':'優先度 低'} ・ ${esc(i.item)}</span><div class="pt">${esc(i.point)}</div>${i.impact?`<div class="impact">▸ ${esc(i.impact)}</div>`:''}</div>`).join('');
-  const fbs=(d.feedback||[]).map(f=>`<div class="fb ${f.sentiment==='pos'?'pos':'neg'}">${esc(f.comment)}<div class="m">${esc(f.item)}・${esc(f.date)}</div></div>`).join('');
-  return `<div class="card">
-    <div class="unlocked-note">✓ 詳細プラン 有効 — 全内容を表示中</div>
-    ${d.summary?`<div class="card-b" style="padding-top:0"><div style="background:var(--bg);border-radius:12px;padding:16px;font-size:13px;line-height:1.9">${esc(d.summary)}</div></div>`:''}
-  </div>
-  <div class="card">
-    <div class="card-h"><h2>改善点（覆面調査より）</h2><span class="sub">${(d.improvements||[]).length}件</span></div>
-    <div class="card-b">${imps}</div>
-  </div>
-  <div class="card">
-    <div class="card-h"><h2>お客様の声</h2><span class="sub">${(d.feedback||[]).length}件</span></div>
-    <div class="card-b">${fbs}</div>
-  </div>`;
-}
-
-window.applyKey=function(){
-  const k=($('#keyin').value||'').trim();
-  const u=new URL(location.href); if(k)u.searchParams.set('key',k); else u.searchParams.delete('key');
-  location.href=u.href;
+const RESP={
+  responding:{l:'お客様の声に対応中',c:'var(--amber)'},
+  responded :{l:'店舗対応済み',      c:'#159079'},
+  rechecked :{l:'キレイン再チェック済み',c:'var(--pine)'},
 };
+let RESP_STATE='responded';   // フォーム選択中の状態
 
-async function main(){
-  let data;
-  try{ data=await (await fetch('stores.json?cb='+Date.now())).json(); }
-  catch(e){ $('#app').innerHTML='<div class="err"><h2>読み込み失敗</h2></div>'; return; }
-  const id=qp.get('s');
-  const store=(data.stores||[]).find(s=>s.id===id);
-  if(!store){ $('#app').innerHTML='<div class="err"><h2>店舗が見つかりません</h2><p>dashboard.html?s=&lt;店舗ID&gt; で開いてください。</p></div>'; return; }
-
-  let html=summaryHtml(data,store);
-  html+=responseCardHtml(store);
-  const tc=store.teaser?{imp:store.teaser.improvements,fb:store.teaser.feedback}:null;
-  const key=qp.get('key');
-  if(key){
-    try{
-      const d=await (await fetch('detail/'+encodeURIComponent(key)+'.json?cb='+Date.now())).json();
-      if(d && d.storeId===id){ html+=detailHtml(d); $('#app').innerHTML=html; return; }
-      html+=lockedHtml(store,tc,true);
-    }catch(e){ html+=lockedHtml(store,tc,true); }
-  } else {
-    html+=lockedHtml(store,tc,false);
-  }
-  $('#app').innerHTML=html;
+function fmtDate(iso){
+  if(!iso) return '—';
+  const d=new Date(iso); if(isNaN(d)) return esc(iso);
+  const p=n=>('0'+n).slice(-2);
+  return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
 }
-main();
+
+/* ── 稼働中の店：本編 ── */
+function renderActive(st){
+  const name=st.name||localPlace()&&localPlace().name||'あなたのお店';
+  const alerts=st.alerts||[];
+  const r=st.response||null;
+  if(r&&RESP[r.status]) RESP_STATE=r.status;
+
+  const alertHtml = alerts.length
+    ? alerts.map(a=>`<div class="alert">
+        <div class="top"><span class="area">${esc(a.area||'清潔全般')}</span><span class="date">${fmtDate(a.detected)}</span></div>
+        <div class="q">${esc(a.quote||'')}</div>
+      </div>`).join('')
+    : `<div class="good"><div class="ico">🌿</div><div class="t">いま、清潔に関する目立ったネガティブ口コミはありません。</div><div class="s">Googleの新着口コミを自動でチェックし続けています。</div></div>`;
+
+  const segBtn=(k,label)=>`<button data-st="${k}" class="${RESP_STATE===k?'on':''}" onclick="pickResp('${k}')">${label}</button>`;
+  const curResp = r ? `<div class="curresp">
+      <div class="st">現在の公開状況：${esc((RESP[r.status]||{}).l||r.status)}</div>
+      ${r.comment?`<div class="cm">「${esc(r.comment)}」</div>`:''}
+      <div class="dt">最終更新：${fmtDate(r.updated)}</div>
+    </div>` : '';
+
+  const certUrl=location.origin+'/cert.html?s='+encodeURIComponent(st.id);
+
+  $('#app').innerHTML=`
+    <div class="card">
+      <div class="st-head">
+        <div class="st-seal"><span class="ico">🛡️</span></div>
+        <div class="st-info">
+          <div class="nm">${esc(name)}</div>
+          <div class="meta">最終チェック：${fmtDate(st.last_checked)}</div>
+          <span class="badge-live"><span class="dot"></span>見張りプラン 稼働中</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h2>① 気づく — 清潔アラート</h2><span class="sub">${alerts.length?alerts.length+'件':'良好'}</span></div>
+      <div class="card-b">
+        ${alertHtml}
+        <div class="hint">Googleの公開口コミの中から、清潔に関するネガティブな声だけを自動で拾っています。<b>この内容は店舗だけが見る画面です。</b>お客様が見るページには口コミの中身・投稿者は一切公開されません。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h2>② 直す・見せる — 対応の公表</h2><span class="sub">お客様ページに反映</span></div>
+      <div class="card-b">
+        ${curResp}
+        <div class="field">
+          <label>対応の状況</label>
+          <div class="seg">
+            ${segBtn('responding','🔧 対応中')}
+            ${segBtn('responded','✓ 対応済み')}
+          </div>
+        </div>
+        <div class="field">
+          <label>お客様に見せるコメント（任意）</label>
+          <textarea id="respComment" placeholder="例：手洗い場の清掃頻度を1日3回に見直しました。">${r&&r.comment?esc(r.comment):''}</textarea>
+        </div>
+        <button class="btn btn-mint" id="saveBtn" onclick="saveResp('${esc(st.id)}')">この内容を公開する</button>
+        <div class="saved" id="savedMsg"></div>
+        <div class="hint">公開されるのは「対応した事実」とこのコメントだけ。<b>ネガティブな口コミの中身・投稿者情報は公開されません。</b>晒しではなく、清潔に向き合う姿勢を見える化します。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h2>お客様に見せるページ</h2><span class="sub">QR / SNS で共有</span></div>
+      <div class="card-b">
+        <div class="sharerow">
+          <div class="shareurl" id="certUrl">${esc(certUrl)}</div>
+          <button class="copybtn" onclick="copyCert()">コピー</button>
+          <a class="copybtn" style="text-decoration:none;background:var(--mint);color:#062019" href="${esc(certUrl)}" target="_blank" rel="noopener">開く</a>
+        </div>
+        <div class="hint">このリンク／QRを店頭やSNSに置くと、お客様に「清潔の声に向き合っている店」であることが伝わります。</div>
+      </div>
+    </div>`;
+}
+
+window.pickResp=function(k){
+  RESP_STATE=k;
+  document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.st===k));
+};
+window.copyCert=function(){
+  const t=$('#certUrl').textContent;
+  navigator.clipboard&&navigator.clipboard.writeText(t);
+  const b=event.target; const o=b.textContent; b.textContent='コピー済'; setTimeout(()=>b.textContent=o,1400);
+};
+window.saveResp=async function(id){
+  const btn=$('#saveBtn'), msg=$('#savedMsg');
+  const comment=($('#respComment').value||'').trim();
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='公開しています…';
+  try{
+    const res=await fetch(API+'/respond',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({storeId:id,status:RESP_STATE,comment})});
+    const j=await res.json();
+    if(res.ok&&j.ok){ msg.style.color='var(--mint)'; msg.textContent='✓ お客様ページに公開しました'; }
+    else{ msg.style.color='var(--red)'; msg.textContent='公開に失敗しました（'+(j.error||res.status)+'）'; }
+  }catch(e){ msg.style.color='var(--red)'; msg.textContent='通信に失敗しました。再度お試しください。'; }
+  btn.disabled=false;
+}
+
+/* ── 未契約：申し込み導線 ── */
+function renderOnboard(){
+  $('#app').innerHTML=`<div class="hero">
+    <div class="ico">🛡️</div>
+    <h2>この店舗はまだ登録されていません</h2>
+    <p>店名を選ぶだけで、あなたの店のGoogle口コミを24時間、自動で見張ります。<br>清潔に関するネガティブな声を早く掴んで、対応をお客様に見せられます。</p>
+    <div class="price">¥3,000<span> / 月</span></div>
+    <a class="btn" href="./start.html">見張りを始める →</a>
+  </div>`;
+}
+
+/* ── 決済直後：反映待ちポーリング ── */
+let tries=0;
+function renderPending(id,name){
+  $('#app').innerHTML=`<div class="hero">
+    <div class="ico">🕐</div>
+    <h2>${esc(name||'お店')}</h2>
+    <p>お支払いを確認して、監視の準備をしています。<br>この画面は自動で切り替わります（最大1分ほど）。</p>
+    <div class="spin"></div>
+  </div>`;
+  setTimeout(()=>load(id,true), 5000);
+}
+
+async function load(id,polling){
+  if(!id){ renderOnboard(); return; }
+  // ローカルプレビュー用モック
+  const mock=qp.get('mock');
+  if(mock){ return renderMock(mock,id); }
+  let j=null, ok=false;
+  try{
+    const res=await fetch(API+'/store?s='+encodeURIComponent(id));
+    j=await res.json(); ok=res.ok;
+  }catch(e){ /* ネットワーク */ }
+  if(ok && j && j.status==='active'){ renderActive(j); return; }
+
+  // active でない：決済直後（ローカルに直近の店がある）なら反映待ち、そうでなければ申し込み
+  const lp=localPlace();
+  const justPaid = lp && lp.id===id;
+  if(justPaid){
+    tries++;
+    if(tries<=12){ renderPending(id, lp.name); return; }   // 約1分リトライ
+    // それでも来ない：申し込み扱い（未決済 or webhook未達）
+  }
+  renderOnboard();
+}
+
+/* ── モック（?mock=active|pending|onboard、ローカル確認用）── */
+function renderMock(mode,id){
+  if(mode==='onboard'){ renderOnboard(); return; }
+  if(mode==='pending'){ $('#app').innerHTML='';
+    renderPending(id,'サンプル食堂'); return; }
+  renderActive({
+    id:id||'mockplace', name:'サンプル食堂 栄店', status:'active',
+    last_checked:'2026-07-31T18:20:00+09:00',
+    response:(mode==='active2')?{status:'responded',comment:'手洗い場の清掃を1日3回に増やしました。',updated:'2026-07-30T12:00:00+09:00'}:null,
+    alerts:(mode==='active2')?[]:[
+      {area:'トイレ',quote:'トイレが少し汚れていて残念でした。',detected:'2026-07-29T21:10:00+09:00'},
+      {area:'におい・換気',quote:'店内のたばこの匂いが気になった。',detected:'2026-07-27T20:00:00+09:00'}
+    ]
+  });
+}
+
+load(storeId(), false);
 </script>
 </body>
 </html>

@@ -59,12 +59,13 @@ async function webhook(request, env) {
   return json({ received: true });
 }
 
-// ── 口コミ監視（Places Details→清潔ネガ検知→新規だけアラート）──
+// ── 口コミ監視（Places Details 旧API→清潔ネガ検知→新規だけアラート）──
 async function monitorStore(store, env) {
   const u = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(store.place_id)}&fields=name,reviews&language=ja&key=${env.GOOGLE_PLACES_KEY}`;
   const data = await (await fetch(u)).json();
   const place = data.result || {};
-  const reviews = place.reviews || [];
+  const reviews = place.reviews || [];  // 旧API: reviews[].text / rating / author_name
+  const placeName = place.name || '';
   const now = new Date().toISOString();
 
   for (const rv of reviews) {
@@ -82,7 +83,7 @@ async function monitorStore(store, env) {
   }
   await env.DB.prepare(
     "UPDATE stores SET name=CASE WHEN name IS NULL OR name='' THEN ? ELSE name END, last_checked=? WHERE id=?"
-  ).bind(place.name || '', now, store.id).run();
+  ).bind(placeName, now, store.id).run();
 }
 
 // ── 店舗データ取得（dashboard/cert が読む）──
