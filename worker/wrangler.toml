@@ -7,9 +7,13 @@ routes = [
   { pattern = "kirein.net/api/*", zone_name = "kirein.net" }
 ]
 
-# Stripeの価格ID（秘密ではないので vars でOK。手順②で作った price_xxx を入れる）
+# 非秘密の設定（秘密ではないので vars でOK）
 [vars]
 STRIPE_PRICE_ID = "price_XXXXXXXXXXXX"
+# Ph2b 通知メールの差出人（Resendで認証したドメインのアドレス）
+ALERT_FROM = "キレイン <alert@kirein.net>"
+# 通知メール内のダッシュボードURL（?s=place_id が付与される）
+DASHBOARD_URL = "https://kirein.net/dashboard.html"
 
 # D1（手順③の `wrangler d1 create kirein` で出た database_id を入れる）
 [[d1_databases]]
@@ -17,11 +21,12 @@ binding = "DB"
 database_name = "kirein"
 database_id = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
 
-# Ph2 で口コミ監視Cronを有効化する時にコメント解除（6時間ごと）
-# [triggers]
-# crons = ["0 */6 * * *"]
+# 口コミ監視Cron（6時間ごと）＝Ph2稼働中
+[triggers]
+crons = ["0 */6 * * *"]
 
 # ⚠️ 秘密は wrangler secret で入れる（ここには書かない）:
 #   wrangler secret put STRIPE_SECRET_KEY
 #   wrangler secret put STRIPE_WEBHOOK_SECRET
-#   （Ph2 で）wrangler secret put GOOGLE_PLACES_KEY
+#   wrangler secret put GOOGLE_PLACES_KEY
+#   wrangler secret put RESEND_API_KEY        # Ph2b メール通知（re_xxx）

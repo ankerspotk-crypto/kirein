@@ -22,10 +22,10 @@ export default {
     if (url.pathname === '/api/respond' && request.method === 'POST') return respond(request, env);
     return json({ error: 'not found' }, 404);
   },
-  // 定時：稼働中の各店の口コミを監視→新規ネガをアラート化
+  // 定時：稼働中の各店の口コミを監視→新規ネガをアラート化→店にメール通知
   async scheduled(event, env) {
     const { results } = await env.DB.prepare(
-      "SELECT id, place_id, name FROM stores WHERE status='active' AND place_id IS NOT NULL AND place_id <> ''"
+      "SELECT id, place_id, name, email FROM stores WHERE status='active' AND place_id IS NOT NULL AND place_id <> ''"
     ).all();
     for (const store of results || []) {
       try { await monitorStore(store, env); } catch (e) { /* この店はスキップ */ }
@@ -44,13 +44,15 @@ async function webhook(request, env) {
   if (ev.type === 'checkout.session.completed') {
     const o = ev.data.object;
     const placeId = o.client_reference_id || (o.metadata && o.metadata.place_id) || null;
+    const email = (o.customer_details && o.customer_details.email) || o.customer_email || '';
     if (placeId) {
       await env.DB.prepare(
-        `INSERT INTO stores (id, place_id, stripe_customer, stripe_sub, status, created)
-         VALUES (?,?,?,?, 'active', ?)
+        `INSERT INTO stores (id, place_id, email, stripe_customer, stripe_sub, status, created)
+         VALUES (?,?,?,?,?, 'active', ?)
          ON CONFLICT(id) DO UPDATE SET status='active',
-           stripe_customer=excluded.stripe_customer, stripe_sub=excluded.stripe_sub`
-      ).bind(placeId, placeId, o.customer || '', o.subscription || '', now).run();
+           stripe_customer=excluded.stripe_customer, stripe_sub=excluded.stripe_sub,
+           email=CASE WHEN excluded.email<>'' THEN excluded.email ELSE stores.email END`
+      ).bind(placeId, placeId, email, o.customer || '', o.subscription || '', now).run();
     }
   } else if (ev.type === 'customer.subscription.deleted') {
     await env.DB.prepare(`UPDATE stores SET status='canceled' WHERE stripe_sub=?`)
@@ -68,6 +70,7 @@ async function monitorStore(store, env) {
   const placeName = place.name || '';
   const now = new Date().toISOString();
 
+  const fresh = [];   // このrunで新規に検知したネガ（まとめて1通で通知）
   for (const rv of reviews) {
     const f = classify(rv);
     if (f && f.s === 'neg') {
@@ -77,14 +80,52 @@ async function monitorStore(store, env) {
       if (!dup) {
         await env.DB.prepare('INSERT INTO alerts (store_id, quote, area, detected) VALUES (?,?,?,?)')
           .bind(store.id, q, f.area, now).run();
-        // TODO: ここで email(Resend) or LINE push で店に通知（Ph2b）
+        fresh.push({ area: f.area, quote: q });
       }
     }
   }
   await env.DB.prepare(
     "UPDATE stores SET name=CASE WHEN name IS NULL OR name='' THEN ? ELSE name END, last_checked=? WHERE id=?"
   ).bind(placeName, now, store.id).run();
+
+  // Ph2b: 新規ネガがあれば店にメール（鍵/宛先が無ければ黙ってスキップ＝監視は止めない）
+  if (fresh.length) {
+    try { await notifyStore({ ...store, name: store.name || placeName }, fresh, env); } catch (e) { /* 送信失敗は無視 */ }
+  }
 }
+
+// ── 新規アラートを店にメール通知（Resend）──
+async function notifyStore(store, fresh, env) {
+  if (!env.RESEND_API_KEY || !env.ALERT_FROM) return;   // 未設定なら送らない
+  const to = store.email;
+  if (!to) return;                                       // 宛先不明なら送らない
+  const dash = (env.DASHBOARD_URL || 'https://kirein.net/dashboard.html') + '?s=' + encodeURIComponent(store.id);
+  const name = store.name || 'お店';
+  const rows = fresh.slice(0, 5).map(a =>
+    `<tr><td style="padding:8px 12px;font-weight:700;color:#c0392b;white-space:nowrap;vertical-align:top">${escHtml(a.area)}</td>`
+    + `<td style="padding:8px 12px;color:#182320;line-height:1.7">「${escHtml(a.quote)}」</td></tr>`).join('');
+  const html =
+    `<div style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;max-width:560px;margin:0 auto;color:#182320">`
+    + `<div style="background:#0e3a33;color:#fff;padding:22px 24px;border-radius:14px 14px 0 0">`
+    + `<div style="font-size:13px;opacity:.85">キレイン 清潔アラート</div>`
+    + `<div style="font-size:19px;font-weight:700;margin-top:4px">${escHtml(name)}に、新しい清潔の声が届きました</div></div>`
+    + `<div style="border:1px solid #e4eae7;border-top:none;border-radius:0 0 14px 14px;padding:20px 24px">`
+    + `<p style="font-size:13px;color:#5d6b66;line-height:1.8;margin:0 0 14px">Googleの公開口コミから、清潔に関する気になる声を${fresh.length}件検知しました。悪い評判が広がる前に、対応をお客様ページに公開しましょう。</p>`
+    + `<table style="width:100%;border-collapse:collapse;background:#fff5f5;border-radius:10px;overflow:hidden;font-size:13px">${rows}</table>`
+    + `<div style="margin-top:20px;text-align:center"><a href="${dash}" style="display:inline-block;background:#25b598;color:#062019;font-weight:700;text-decoration:none;padding:13px 28px;border-radius:999px;font-size:14px">ダッシュボードで対応する →</a></div>`
+    + `<p style="font-size:11px;color:#9fb3ac;line-height:1.7;margin:18px 0 0">この声の中身・投稿者はお客様には公開されません。公開されるのはあなたが選ぶ「対応状況」だけです。<br>キレイン ｜ 清潔の声の自動見張り</p></div></div>`;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: env.ALERT_FROM, to: [to],
+      subject: `【キレイン】${name}に新しい清潔の声（${fresh.length}件）`,
+      html,
+    }),
+  });
+  if (!res.ok) throw new Error('resend ' + res.status);
+}
+function escHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 // ── 店舗データ取得（dashboard/cert が読む）──
 async function getStore(url, env) {
