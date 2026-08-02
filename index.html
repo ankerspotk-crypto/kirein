@@ -1094,7 +1094,32 @@ function addPost(shopId, cleanliness, air, comment, fixedPoints, extra){
   const lastPost = posts[posts.length - 1];
   savePostToFirestore(lastPost);
 
+  // 清潔ネガならキレインの「見張り」に通知（稼働中の店だけ Worker 側で拾う／非契約は無視）
+  reportNegativeToStore(cleanliness, comment, extra);
+
   return points;
+}
+
+// キレイン独自の清潔ネガ投稿を、契約店の見張り(Worker)へ届ける。
+// fire-and-forget（UIを止めない）／text/plainでpreflight回避＝LIFF等の別オリジンからも送れる。
+function reportNegativeToStore(cleanliness, comment, extra){
+  try{
+    const placeId = extra && extra.placeId;
+    const negItems = (extra && extra.negItems) || [];
+    const isNeg = (Number(cleanliness) <= 2) || negItems.length > 0;
+    if(!isNeg || !placeId) return;
+    const body = JSON.stringify({
+      place_id: placeId,
+      area: negItems[0] || '清潔全般',
+      quote: ((extra && extra.negComment) || comment || '').slice(0, 200),
+      rating: Number(cleanliness)
+    });
+    fetch('https://kirein.net/api/kirein-post', {
+      method: 'POST', keepalive: true,
+      headers: { 'Content-Type': 'text/plain' },
+      body
+    }).catch(()=>{});
+  }catch(e){ /* 通知失敗は投稿本体に影響させない */ }
 }
 
 function showLoginModal(){

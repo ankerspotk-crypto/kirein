@@ -21,8 +21,11 @@ CREATE TABLE IF NOT EXISTS alerts (
   store_id  TEXT,
   quote     TEXT,                     -- 検知した口コミの一文
   area      TEXT,                     -- トイレ/におい 等
-  detected  TEXT
+  detected  TEXT,
+  source    TEXT                      -- google | kirein（どの経路の声か）
 );
+-- 既存D1に後から列を足す場合（初回CREATE後に一度だけ）:
+--   wrangler d1 execute kirein --remote --command "ALTER TABLE alerts ADD COLUMN source TEXT"
 
 -- Ph3: 店舗の対応公表（cert.html が読む）
 CREATE TABLE IF NOT EXISTS responses (

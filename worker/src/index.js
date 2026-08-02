@@ -17,9 +17,10 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
-    if (url.pathname === '/api/webhook' && request.method === 'POST') return webhook(request, env);
-    if (url.pathname === '/api/store'   && request.method === 'GET')  return getStore(url, env);
-    if (url.pathname === '/api/respond' && request.method === 'POST') return respond(request, env);
+    if (url.pathname === '/api/webhook'     && request.method === 'POST') return webhook(request, env);
+    if (url.pathname === '/api/store'       && request.method === 'GET')  return getStore(url, env);
+    if (url.pathname === '/api/respond'     && request.method === 'POST') return respond(request, env);
+    if (url.pathname === '/api/kirein-post' && request.method === 'POST') return kireinPost(request, env);
     return json({ error: 'not found' }, 404);
   },
   // 定時：稼働中の各店の口コミを監視→新規ネガをアラート化→店にメール通知
@@ -78,9 +79,9 @@ async function monitorStore(store, env) {
       const dup = await env.DB.prepare('SELECT 1 FROM alerts WHERE store_id=? AND quote=? LIMIT 1')
         .bind(store.id, q).first();
       if (!dup) {
-        await env.DB.prepare('INSERT INTO alerts (store_id, quote, area, detected) VALUES (?,?,?,?)')
-          .bind(store.id, q, f.area, now).run();
-        fresh.push({ area: f.area, quote: q });
+        await env.DB.prepare('INSERT INTO alerts (store_id, quote, area, detected, source) VALUES (?,?,?,?,?)')
+          .bind(store.id, q, f.area, now, 'google').run();
+        fresh.push({ area: f.area, quote: q, source: 'google' });
       }
     }
   }
@@ -101,6 +102,8 @@ async function notifyStore(store, fresh, env) {
   if (!to) return;                                       // 宛先不明なら送らない
   const dash = (env.DASHBOARD_URL || 'https://kirein.net/dashboard.html') + '?s=' + encodeURIComponent(store.id);
   const name = store.name || 'お店';
+  const srcAllKirein = fresh.every(a => a.source === 'kirein');
+  const srcLabel = srcAllKirein ? 'キレインのユーザー' : 'Googleの公開口コミ';
   const rows = fresh.slice(0, 5).map(a =>
     `<tr><td style="padding:8px 12px;font-weight:700;color:#c0392b;white-space:nowrap;vertical-align:top">${escHtml(a.area)}</td>`
     + `<td style="padding:8px 12px;color:#182320;line-height:1.7">「${escHtml(a.quote)}」</td></tr>`).join('');
@@ -110,7 +113,7 @@ async function notifyStore(store, fresh, env) {
     + `<div style="font-size:13px;opacity:.85">キレイン 清潔アラート</div>`
     + `<div style="font-size:19px;font-weight:700;margin-top:4px">${escHtml(name)}に、新しい清潔の声が届きました</div></div>`
     + `<div style="border:1px solid #e4eae7;border-top:none;border-radius:0 0 14px 14px;padding:20px 24px">`
-    + `<p style="font-size:13px;color:#5d6b66;line-height:1.8;margin:0 0 14px">Googleの公開口コミから、清潔に関する気になる声を${fresh.length}件検知しました。悪い評判が広がる前に、対応をお客様ページに公開しましょう。</p>`
+    + `<p style="font-size:13px;color:#5d6b66;line-height:1.8;margin:0 0 14px">${srcLabel}から、清潔に関する気になる声を${fresh.length}件検知しました。悪い評判が広がる前に、対応をお客様ページに公開しましょう。</p>`
     + `<table style="width:100%;border-collapse:collapse;background:#fff5f5;border-radius:10px;overflow:hidden;font-size:13px">${rows}</table>`
     + `<div style="margin-top:20px;text-align:center"><a href="${dash}" style="display:inline-block;background:#25b598;color:#062019;font-weight:700;text-decoration:none;padding:13px 28px;border-radius:999px;font-size:14px">ダッシュボードで対応する →</a></div>`
     + `<p style="font-size:11px;color:#9fb3ac;line-height:1.7;margin:18px 0 0">この声の中身・投稿者はお客様には公開されません。公開されるのはあなたが選ぶ「対応状況」だけです。<br>キレイン ｜ 清潔の声の自動見張り</p></div></div>`;
@@ -135,7 +138,7 @@ async function getStore(url, env) {
   if (!store) return json({ error: 'not found', status: 'none' }, 404);
   const resp = await env.DB.prepare('SELECT status,comment,updated FROM responses WHERE store_id=?').bind(id).first();
   const { results: alerts } = await env.DB.prepare(
-    'SELECT quote,area,detected FROM alerts WHERE store_id=? ORDER BY id DESC LIMIT 10'
+    'SELECT quote,area,detected,source FROM alerts WHERE store_id=? ORDER BY id DESC LIMIT 10'
   ).bind(id).all();
   return json({ ...store, response: resp || null, alerts: alerts || [] });
 }
@@ -152,6 +155,33 @@ async function respond(request, env) {
     `INSERT INTO responses (store_id,status,comment,updated) VALUES (?,?,?,?)
      ON CONFLICT(store_id) DO UPDATE SET status=excluded.status, comment=excluded.comment, updated=excluded.updated`
   ).bind(storeId, status || 'responded', comment || '', new Date().toISOString()).run();
+  return json({ ok: true });
+}
+
+// ── キレイン独自アプリの清潔ネガ投稿を受ける（消費者アプリ index.html から）──
+// 濫用面を絞るため「稼働中の店だけ」扱い、それ以外は黙って無視。重複はスキップ。
+async function kireinPost(request, env) {
+  let b; try { b = JSON.parse(await request.text()); } catch { return json({ error: 'bad json' }, 400); }
+  const placeId = (b.place_id || '').toString().trim();
+  if (!placeId) return json({ error: 'place_id required' }, 400);
+
+  const store = await env.DB.prepare("SELECT id,name,email,status FROM stores WHERE id=?").bind(placeId).first();
+  if (!store || store.status !== 'active') return json({ ok: true, skipped: 'not-active' });  // 非契約は無視（通知しない）
+
+  const rating = Number(b.rating);
+  const area = (b.area || '').toString().slice(0, 40) || '清潔全般';
+  const hasArea = !!(b.area && b.area !== '清潔全般');
+  const isNeg = (!isNaN(rating) && rating <= 2) || hasArea;   // 低評価 or 具体的なネガ項目あり
+  if (!isNeg) return json({ ok: true, skipped: 'not-negative' });
+
+  const q = ((b.quote || '').toString().slice(0, 200).trim()) || (area + 'について気になる声が届きました');
+  const dup = await env.DB.prepare('SELECT 1 FROM alerts WHERE store_id=? AND quote=? LIMIT 1').bind(store.id, q).first();
+  if (dup) return json({ ok: true, skipped: 'dup' });
+
+  const now = new Date().toISOString();
+  await env.DB.prepare('INSERT INTO alerts (store_id, quote, area, detected, source) VALUES (?,?,?,?,?)')
+    .bind(store.id, q, area, now, 'kirein').run();
+  try { await notifyStore(store, [{ area, quote: q, source: 'kirein' }], env); } catch (e) { /* 送信失敗は無視 */ }
   return json({ ok: true });
 }
 

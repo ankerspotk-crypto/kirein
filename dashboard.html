@@ -45,6 +45,7 @@ h1,h2,h3{font-family:"Noto Serif JP",serif}
 .alert{border-left:3px solid var(--red);background:var(--red-soft);border-radius:10px;padding:14px 16px;margin-bottom:10px}
 .alert .top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .alert .area{font-size:11px;font-weight:700;color:var(--red);background:#fff;border:1px solid #f2c9c2;padding:2px 10px;border-radius:999px}
+.alert .src{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px}
 .alert .date{font-size:11px;color:var(--muted);margin-left:auto}
 .alert .q{font-size:13.5px;line-height:1.7;color:var(--ink)}
 .alert .q::before{content:"“";color:#e0a99f;font-weight:700}
@@ -143,11 +144,13 @@ function renderActive(st){
   const r=st.response||null;
   if(r&&RESP[r.status]) RESP_STATE=r.status;
 
+  const srcMeta={kirein:{l:'キレインのユーザー',c:'#159079',bg:'#e6f5f1'},google:{l:'Googleの口コミ',c:'#c78a00',bg:'#fdf6e6'}};
   const alertHtml = alerts.length
-    ? alerts.map(a=>`<div class="alert">
-        <div class="top"><span class="area">${esc(a.area||'清潔全般')}</span><span class="date">${fmtDate(a.detected)}</span></div>
+    ? alerts.map(a=>{const sm=srcMeta[a.source]||srcMeta.google;
+      return `<div class="alert">
+        <div class="top"><span class="area">${esc(a.area||'清潔全般')}</span><span class="src" style="color:${sm.c};background:${sm.bg}">${sm.l}</span><span class="date">${fmtDate(a.detected)}</span></div>
         <div class="q">${esc(a.quote||'')}</div>
-      </div>`).join('')
+      </div>`;}).join('')
     : `<div class="good"><div class="ico">🌿</div><div class="t">いま、清潔に関する目立ったネガティブ口コミはありません。</div><div class="s">Googleの新着口コミを自動でチェックし続けています。</div></div>`;
 
   const segBtn=(k,label)=>`<button data-st="${k}" class="${RESP_STATE===k?'on':''}" onclick="pickResp('${k}')">${label}</button>`;
@@ -292,8 +295,8 @@ function renderMock(mode,id){
     last_checked:'2026-07-31T18:20:00+09:00',
     response:(mode==='active2')?{status:'responded',comment:'手洗い場の清掃を1日3回に増やしました。',updated:'2026-07-30T12:00:00+09:00'}:null,
     alerts:(mode==='active2')?[]:[
-      {area:'トイレ',quote:'トイレが少し汚れていて残念でした。',detected:'2026-07-29T21:10:00+09:00'},
-      {area:'におい・換気',quote:'店内のたばこの匂いが気になった。',detected:'2026-07-27T20:00:00+09:00'}
+      {area:'トイレ',quote:'トイレが少し汚れていて残念でした。',detected:'2026-07-29T21:10:00+09:00',source:'kirein'},
+      {area:'におい・換気',quote:'店内のたばこの匂いが気になった。',detected:'2026-07-27T20:00:00+09:00',source:'google'}
     ]
   });
 }
