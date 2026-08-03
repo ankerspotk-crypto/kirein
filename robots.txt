@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard.html
+Disallow: /cert.html
+Disallow: /tokushoho.html
+
+Sitemap: https://kirein.net/sitemap.xml
