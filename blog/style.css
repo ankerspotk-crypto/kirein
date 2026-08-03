@@ -1,0 +1,35 @@
+:root{--pine:#0e3a33;--pine-deep:#082722;--mint:#25b598;--mint-soft:#e6f5f1;--ink:#182320;--muted:#5d6b66;--line:#e4eae7;--bg:#f6f9f8;--card:#fff}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Noto Sans JP",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.95;-webkit-font-smoothing:antialiased}
+.top{display:flex;align-items:center;justify-content:space-between;width:min(760px,92vw);margin:0 auto;padding:16px 0}
+.logo{display:flex;align-items:center;gap:8px;font-family:"Cormorant Garamond",serif;font-size:21px;color:var(--pine);font-weight:600;text-decoration:none}
+.logo svg{width:22px;height:22px}.logo b{font-family:"Noto Sans JP";font-size:12px;font-weight:700}
+.top a{font-size:13px;color:var(--muted);text-decoration:none}
+article{width:min(760px,92vw);margin:0 auto;padding:10px 0 40px}
+.tag{display:inline-block;font-size:12px;font-weight:700;color:var(--mint);letter-spacing:.04em;margin-bottom:10px}
+h1{font-family:"Noto Serif JP",serif;font-size:27px;line-height:1.5;color:var(--pine);margin:0 0 10px}
+.lead{font-size:15px;color:var(--muted);margin:0 0 28px;line-height:1.9}
+article h2{font-family:"Noto Serif JP",serif;font-size:20px;color:var(--pine);margin:34px 0 12px;padding-top:8px;border-top:2px solid var(--mint-soft)}
+article h3{font-size:16px;color:var(--pine);margin:20px 0 8px}
+article p{font-size:15px;margin:0 0 16px}
+article ul,article ol{margin:0 0 18px;padding-left:1.3em}
+article li{font-size:15px;margin-bottom:8px}
+article b{color:var(--pine)}
+.note{background:#fff5f5;border-left:3px solid #e88;border-radius:10px;padding:14px 18px;font-size:14px;margin:0 0 18px;line-height:1.85}
+.tip{background:var(--mint-soft);border-left:3px solid var(--mint);border-radius:10px;padding:14px 18px;font-size:14px;margin:0 0 18px;line-height:1.85}
+.cta{background:linear-gradient(150deg,var(--pine-deep),#0b2c27);color:#fff;border-radius:18px;padding:30px 26px;text-align:center;margin:34px 0;box-shadow:0 16px 44px -24px rgba(14,58,51,.4)}
+.cta .k{font-size:13px;color:#9fc4ba;font-weight:700;letter-spacing:.06em}
+.cta h3{font-size:20px;margin:8px 0 8px;color:#fff}
+.cta p{font-size:13.5px;color:#c2d6d0;line-height:1.9;margin:0 0 18px}
+.cta a{display:inline-block;background:var(--mint);color:#062019;font-weight:800;text-decoration:none;padding:14px 30px;border-radius:999px;font-size:15px}
+.cta small{display:block;color:#9fc4ba;font-size:12px;margin-top:12px}
+.foot{width:min(760px,92vw);margin:0 auto;text-align:center;padding:24px 0 40px;font-size:12px;color:#9fb3ac;line-height:1.9;border-top:1px solid var(--line)}
+.foot a{color:var(--mint);font-weight:700;text-decoration:none}
+/* コラム一覧 */
+.list{width:min(760px,92vw);margin:0 auto;padding:8px 0 40px}
+.list h1{text-align:center;margin-bottom:8px}
+.list .sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:26px}
+.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:12px;text-decoration:none;color:var(--ink);box-shadow:0 12px 32px -26px rgba(14,58,51,.3);transition:.15s}
+.card:hover{border-color:var(--mint);transform:translateY(-1px)}
+.card .t{font-family:"Noto Serif JP",serif;font-weight:700;color:var(--pine);font-size:16px;line-height:1.5}
+.card .d{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.7}

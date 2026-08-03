@@ -4,5 +4,16 @@
   <url><loc>https://kirein.net/business.html</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://kirein.net/diagnose.html</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://kirein.net/start.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kirein.net/blog/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://kirein.net/blog/toilet-kuchikomi-taisho.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kirein.net/blog/iwarenai-fuman.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kirein.net/blog/akui-kuchikomi-henshin.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kirein.net/blog/google-kuchikomi-kesu.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kirein.net/blog/josei-kyaku-checklist.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kirein.net/blog/nioi-tabako-taisaku.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kirein.net/blog/seki-betabeta.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kirein.net/blog/mise-mae-clean.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kirein.net/blog/gomi-backyard.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kirein.net/blog/hoshi-hyoka-ageru.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kirein.net/blog/kojin-shikumi.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>
