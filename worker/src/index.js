@@ -190,18 +190,47 @@ async function kireinPost(request, env) {
 // WorkerがGOOGLE_PLACES_KEYで動く＝ローカルにPlacesキー不要。t=PROSPECT_TOKEN で保護（公開リポに値は置かない）。
 async function prospect(url, env) {
   if (!env.PROSPECT_TOKEN || url.searchParams.get('t') !== env.PROSPECT_TOKEN) return json({ error: 'forbidden' }, 403);
-  const area = (url.searchParams.get('area') || '').trim();
-  if (!area) return json({ error: 'area required（?area=難波 居酒屋）' }, 400);
-  const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10) || 20, 20); // subrequest上限に配慮し最大20
-  const soft = url.searchParams.get('strict') !== '1'; // 既定は soft(弱いネガも拾う)。&strict=1 で厳格
+  const q = (url.searchParams.get('area') || '').trim();
+  if (!q) return json({ error: 'area required（?area=難波 居酒屋）' }, 400);
+  const soft   = url.searchParams.get('strict') !== '1';                 // 既定soft・&strict=1で厳格
+  const nearby = url.searchParams.get('nearby') === '1';                 // &nearby=1 で低評価店も拾うモード
+  const limit  = Math.min(parseInt(url.searchParams.get('limit') || '20', 10) || 20, 20);
+  const minr   = parseFloat(url.searchParams.get('minr') || '2.5');      // 評価バンド下限
+  const maxr   = parseFloat(url.searchParams.get('maxr') || '5');        // 評価バンド上限（低評価狙いは3.9等）
+  const mint   = parseInt(url.searchParams.get('mint') || '10', 10);     // 最低レビュー数
   const key = env.GOOGLE_PLACES_KEY;
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
-  const ts = await (await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(area)}&language=ja&region=jp&type=restaurant&key=${key}`)).json();
-  if (ts.status && ts.status !== 'OK' && ts.status !== 'ZERO_RESULTS') return json({ error: 'places', status: ts.status, message: ts.error_message || '' }, 502);
-  const cands = (ts.results || []).slice(0, limit);
+  let cands = [];
+  if (nearby) {
+    // area→中心座標を取得→Nearby(rankby=distance)で低評価店も含めて拾う
+    const ts = await (await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(q)}&language=ja&region=jp&key=${key}`)).json();
+    const loc = ts.results && ts.results[0] && ts.results[0].geometry && ts.results[0].geometry.location;
+    if (!loc) return json({ error: 'center not found', status: ts.status || '' }, 502);
+    const parts = q.split(/\s+/); const genre = parts.length > 1 ? parts[parts.length - 1] : '';
+    let token = null, page = 0;
+    do {
+      const nu = token
+        ? `https://maps.googleapis.com/maps/api/place/nearbysearch/json?pagetoken=${token}&key=${key}`
+        : `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${loc.lat},${loc.lng}&rankby=distance&type=restaurant${genre ? '&keyword=' + encodeURIComponent(genre) : ''}&language=ja&key=${key}`;
+      const ns = await (await fetch(nu)).json();
+      for (const r of (ns.results || [])) cands.push(r);
+      token = ns.next_page_token || null; page++;
+      if (token && cands.length < 60) await wait(1800);
+    } while (token && page < 3 && cands.length < 60);
+  } else {
+    const ts = await (await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(q)}&language=ja&region=jp&type=restaurant&key=${key}`)).json();
+    if (ts.status && ts.status !== 'OK' && ts.status !== 'ZERO_RESULTS') return json({ error: 'places', status: ts.status, message: ts.error_message || '' }, 502);
+    cands = ts.results || [];
+  }
+
+  // 評価バンド＋レビュー数で絞り、低評価優先で limit 件だけ詳細取得
+  let filtered = cands.filter(c => { const r = c.rating || 0, tot = c.user_ratings_total || 0; return r >= minr && r <= maxr && tot >= mint; });
+  filtered.sort((a, b) => (a.rating || 9) - (b.rating || 9));
+  filtered = filtered.slice(0, limit);
 
   const prospects = [];
-  for (const c of cands) {
+  for (const c of filtered) {
     try {
       const d = await (await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(c.place_id)}&fields=name,formatted_address,rating,user_ratings_total,reviews&language=ja&key=${key}`)).json();
       const p = d.result; if (!p) continue;
@@ -221,7 +250,7 @@ async function prospect(url, env) {
     } catch (e) { /* この店はスキップ */ }
   }
   prospects.sort((a, b) => b.score - a.score);
-  return json({ area, scanned: cands.length, count: prospects.length, prospects });
+  return json({ area: q, mode: nearby ? 'nearby' : 'textsearch', candidates: cands.length, filtered: filtered.length, count: prospects.length, prospects });
 }
 function prospectHook(name, areas, negCount, extCount, placeId) {
   const areaPhrase = areas.filter(a => a !== '清潔全般').join('・') || '清潔面';
