@@ -126,12 +126,15 @@ const HARD_NEG = /汚[いくれかっ]|きたな|不潔|べたべた|ベタベ�
 // 明確に負の匂い（食べ物の「香り」は含めない）
 const NEG_SMELL = /悪臭|異臭|カビ臭|かび臭|下水.{0,3}臭|ドブ臭|生ゴミ.{0,3}臭|排水.{0,3}臭|臭[いくかっ]|くさ[いくかっ]|におい.{0,5}(気にな|きつ|ひど|する)|匂い.{0,5}(気にな|きつ|ひど)|タバコ.{0,5}(臭|きつ|ひど|充満)|煙.{0,5}(充満|きつ|ひど)/;
 const NEG_SMELL_STANDALONE = /悪臭|異臭|カビ臭|かび臭|下水.{0,3}臭|ドブ臭|生ゴミ.{0,3}臭/;
+// 弱いネガ（清潔エリア語の近く＋★4以下レビューに限り拾う。抽出エンジンと同じ較正）
+const SOFT_NEG = /残念|気にな|いまひとつ|イマイチ|微妙|不衛生|清潔感.{0,3}(な|欠|薄)|綺麗とは|きれいとは|古[いくかっ]/;
 // ポジティブ（清潔面の好評）
 const POS_RE = /(きれい|綺麗|キレイ|清潔|ピカピカ|衛生的|行き届|手入れ.{0,3}(され|行き届)|清潔感)/;
-// エリア語の「すぐ近く(±N)」に 汚れ語 or 負の匂い がある時だけ清潔ネガ
+// エリア語の「すぐ近く(±N)」に 汚れ語/負の匂い/(★4以下なら)弱いネガ がある時だけ清潔ネガ
 function classifyReview(r){
   const text = r && r.text;
   if(!text) return null;
+  const rating = Number(r && r.rating) || 0;
   const meta = { text, author: r.author_name || '', rating: r.rating || null };
   const N = 16;
   for(const a of CLEAN_AREAS){
@@ -139,6 +142,7 @@ function classifyReview(r){
     while((m = re.exec(text))){
       const win = text.slice(Math.max(0, m.index - N), m.index + m[0].length + N);
       if(HARD_NEG.test(win) || NEG_SMELL.test(win)) return { s:'neg', area:a.key, ext:!!a.ext, ...meta };
+      if((!rating || rating <= 4) && SOFT_NEG.test(win)) return { s:'neg', area:a.key, ext:!!a.ext, soft:true, ...meta };
     }
   }
   // 場所語が無くても、明確な悪臭は「外の匂い」として拾う（近隣クレーム型）

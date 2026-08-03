@@ -193,6 +193,7 @@ async function prospect(url, env) {
   const area = (url.searchParams.get('area') || '').trim();
   if (!area) return json({ error: 'area required（?area=難波 居酒屋）' }, 400);
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10) || 20, 20); // subrequest上限に配慮し最大20
+  const soft = url.searchParams.get('strict') !== '1'; // 既定は soft(弱いネガも拾う)。&strict=1 で厳格
   const key = env.GOOGLE_PLACES_KEY;
 
   const ts = await (await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(area)}&language=ja&region=jp&type=restaurant&key=${key}`)).json();
@@ -205,7 +206,7 @@ async function prospect(url, env) {
       const d = await (await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(c.place_id)}&fields=name,formatted_address,rating,user_ratings_total,reviews&language=ja&key=${key}`)).json();
       const p = d.result; if (!p) continue;
       const negs = [];
-      for (const rv of (p.reviews || [])) { const f = classify(rv); if (f && f.s === 'neg') negs.push(f); }
+      for (const rv of (p.reviews || [])) { const f = classify(rv, soft); if (f && f.s === 'neg') negs.push(f); }
       if (!negs.length) continue;
       const areas = [...new Set(negs.map(n => n.area))];
       const extCount = negs.filter(n => n.ext).length;
@@ -254,16 +255,21 @@ const AREAS = [
 const HARD_NEG = /汚[いくれかっ]|きたな|不潔|べたべた|ベタベタ|べたつ|ぬめ|ぬる|ほこり|埃|カビ|かび|虫|ゴキブリ|コバエ|ハエ|ネズミ|散らか|放置|溜ま|山積|べとべと/;
 const NEG_SMELL = /悪臭|異臭|カビ臭|かび臭|下水.{0,3}臭|ドブ臭|生ゴミ.{0,3}臭|排水.{0,3}臭|臭[いくかっ]|くさ[いくかっ]|におい.{0,5}(気にな|きつ|ひど|する)|匂い.{0,5}(気にな|きつ|ひど)|タバコ.{0,5}(臭|きつ|ひど|充満)|煙.{0,5}(充満|きつ|ひど)/;
 const NEG_SMELL_STANDALONE = /悪臭|異臭|カビ臭|かび臭|下水.{0,3}臭|ドブ臭|生ゴミ.{0,3}臭/;
+// 弱いネガ（清潔エリア語の近くにある時＝低評価レビューに限り拾う。営業リード発掘用の recall）
+const SOFT_NEG = /残念|気にな|いまひとつ|イマイチ|微妙|不衛生|清潔感.{0,3}(な|欠|薄)|綺麗とは|きれいとは|古[いくかっ]/;
 const POS = /(きれい|綺麗|キレイ|清潔|ピカピカ|衛生的|行き届|手入れ.{0,3}(され|行き届)|清潔感)/;
-function classify(rv) {
+// soft=true で弱いネガ(近接＋★4以下)も拾う。監視アラート(店に通知)は soft=false で厳格。
+function classify(rv, soft) {
   const text = rv && rv.text;
   if (!text) return null;
+  const rating = Number(rv && rv.rating) || 0;
   const N = 16;
   for (const a of AREAS) {
     const re = new RegExp(a.re.source, 'g'); let m;
     while ((m = re.exec(text))) {
       const win = text.slice(Math.max(0, m.index - N), m.index + m[0].length + N);
       if (HARD_NEG.test(win) || NEG_SMELL.test(win)) return { s: 'neg', area: a.k, ext: !!a.ext, text };
+      if (soft && (!rating || rating <= 4) && SOFT_NEG.test(win)) return { s: 'neg', area: a.k, ext: !!a.ext, soft: true, text };
     }
   }
   if (NEG_SMELL_STANDALONE.test(text)) return { s: 'neg', area: '外の匂い・排気', ext: true, text };
