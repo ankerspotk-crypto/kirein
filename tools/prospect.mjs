@@ -6,6 +6,9 @@
 // 使い方:
 //   PLACES_KEY=あなたのPlacesキー node tools/prospect.mjs --area "難波 居酒屋" --limit 40 --out prospects
 //   node tools/prospect.mjs --mock            # 鍵なしでパイプライン検証（サンプルデータ）
+//   （--loose  : フィルタを緩める。清潔エリア語と共起しないネガ口コミも拾う）
+//
+// 出力: <out>.csv / <out>.json / <out>.log(診断ログ)
 //
 // ⚠️ 方針(memory準拠):
 //  - 冷たいDMのフックに Google口コミを丸ごと引用しない（帰属義務・ToS）。要約(エリア名)だけ。
@@ -24,8 +27,13 @@ const AREA   = getArg('area', '難波 居酒屋');
 const LIMIT  = parseInt(getArg('limit', '40'), 10);
 const OUT    = getArg('out', 'prospects');
 const MOCK   = has('mock');
+const LOOSE  = has('loose');
 const DIAG_BASE = getArg('diag', 'https://kirein.net/diagnose.html');
 const KEY    = process.env.PLACES_KEY || '';
+
+// ── 診断ログ（画面にも出しつつ <out>.log に残す）──
+const LOG = [];
+const say = (...a) => { const s = a.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' '); LOG.push(s); console.log(s); };
 
 if (!MOCK && !KEY) {
   console.error('❌ PLACES_KEY が未設定です。 例) PLACES_KEY=xxxx node tools/prospect.mjs --area "難波 居酒屋"');
@@ -33,23 +41,41 @@ if (!MOCK && !KEY) {
   process.exit(1);
 }
 
-// ── 清潔ワード解析（Worker と同じロジックを移植）──
-const AREAS = [
-  { k: 'トイレ',        re: /トイレ|お手洗|化粧室|洗面|便所/ },
-  { k: 'におい・換気',  re: /にお|匂|臭|ニオイ|香り|煙|タバコ|たばこ|喫煙|換気|空気/ },
-  { k: '席・テーブル',  re: /席|テーブル|座席|シート|カウンター/ },
-  { k: '床・店内',      re: /床|店内|通路|壁|内装|入口|階段/ },
-  { k: '食器・グラス',  re: /食器|グラス|コップ|お皿|カトラリー|箸|おしぼり/ },
-  { k: '手洗い・衛生',  re: /手洗|石鹸|石けん|消毒|衛生/ },
+// ── 清潔ワード解析 v2（精度優先・近接ルール／店内＋店外）──
+// エリア語の「すぐ近く(±N)」に 明確な汚れ語 or 負の匂い がある時だけ清潔ネガと判定。
+// → 食べ物の「香り」や、清潔と無関係の「残念/気になる」で誤爆しない。
+const CLEAN_AREAS = [
+  // 🏠 店内（客が体験）
+  { k: 'トイレ',           re: /トイレ|お手洗|化粧室|洗面所?|便所/ },
+  { k: '席・テーブル',     re: /テーブル|座席|カウンター|お?席|シート/ },
+  { k: '床・店内',         re: /床|店内|通路|内装|階段/ },
+  { k: '食器・グラス',     re: /食器|グラス|コップ|お皿|カトラリー|お?箸|おしぼり/ },
+  { k: '手洗い・衛生',     re: /手洗|石鹸|石けん|消毒/ },
+  // 🚪 店外（通行人・近隣＝非客が気づく）
+  { k: '店前・入口',       re: /店[のの　 ]?前|店頭|入口|入り口|玄関|軒先|外観|外壁/, ext: true },
+  { k: 'ゴミ置き場',       re: /ゴミ|ごみ|生ゴミ|ゴミ袋|ゴミ置|ゴミ捨/, ext: true },
+  { k: '裏・バックヤード', re: /裏[口手にのを　 ]|バックヤード|路地|側溝|排水溝|溝/, ext: true },
+  { k: '外の匂い・排気',   re: /排気|換気扇|ダクト|近隣|ご近所|住民/, ext: true },
 ];
-const NEG = /汚[いくれ]|きたな|不潔|くさ[いく]|臭[いく]|ベタベタ|べたつ|ぬめ|ほこり|埃|カビ|かび|虫|ゴキブリ|コバエ|ハエ|散らか|落ちて(い|た)|古[くび].{0,3}汚|残念|気にな|清掃.{0,5}(され|してな|不足|甘)|掃除.{0,5}(され|してな|不足|甘)/;
-// prospect用: NEGだけだと「料理が残念」等の誤検出が混じる。清潔エリア語との共起を"強シグナル"とする。
+// 明確な汚れ語（あいまいな 残念/気になる は入れない）
+const HARD_NEG = /汚[いくれかっ]|きたな|不潔|べたべた|ベタベタ|べたつ|ぬめ|ぬる|ほこり|埃|カビ|かび|虫|ゴキブリ|コバエ|ハエ|ネズミ|散らか|放置|溜ま|山積|べとべと/;
+// 明確に負の匂い（食べ物の「香り」は含めない）
+const NEG_SMELL = /悪臭|異臭|カビ臭|かび臭|下水.{0,3}臭|ドブ臭|生ゴミ.{0,3}臭|排水.{0,3}臭|臭[いくかっ]|くさ[いくかっ]|におい.{0,5}(気にな|きつ|ひど|する)|匂い.{0,5}(気にな|きつ|ひど)|タバコ.{0,5}(臭|きつ|ひど|充満)|煙.{0,5}(充満|きつ|ひど)/;
+const NEG_SMELL_STANDALONE = /悪臭|異臭|カビ臭|かび臭|下水.{0,3}臭|ドブ臭|生ゴミ.{0,3}臭/;
+
 function classifyClean(text) {
   if (!text) return null;
-  const areaHit = AREAS.find(a => a.re.test(text));
-  const neg = NEG.test(text);
-  if (!neg) return null;
-  return { area: areaHit ? areaHit.k : '清潔全般', strong: !!areaHit, text };
+  const N = 16; // 近接ウィンドウ
+  for (const a of CLEAN_AREAS) {
+    const re = new RegExp(a.re.source, 'g'); let m;
+    while ((m = re.exec(text))) {
+      const win = text.slice(Math.max(0, m.index - N), m.index + m[0].length + N);
+      if (HARD_NEG.test(win) || NEG_SMELL.test(win)) return { area: a.k, ext: !!a.ext, strong: true, text };
+    }
+  }
+  // 場所語が無くても、明確な悪臭は「外の匂い」として拾う（近隣クレーム型）
+  if (NEG_SMELL_STANDALONE.test(text)) return { area: '外の匂い・排気', ext: true, strong: true, text };
+  return null;
 }
 
 // ── 店ごとの“当てフック文面”を生成（要約のみ・丸引用しない）──
@@ -57,11 +83,14 @@ function buildHook(store) {
   const areas = [...new Set(store.negAreas)].filter(a => a !== '清潔全般');
   const areaPhrase = areas.length ? areas.join('・') : '清潔面';
   const diag = `${DIAG_BASE}?s=${encodeURIComponent(store.place_id)}`;
+  const extLine = store.extCount > 0
+    ? `特に店外（店前・ゴミ置き場・裏・匂い）に関する記述は、お客様だけでなく通行人・近隣の方の目にも触れ、近隣トラブルや行政への相談に発展しやすい点です。`
+    : `こうした声は、女性・デート・高単価のお客様が“何も言わず二度と来ない”きっかけになりがちです。`;
   return [
     `【${store.name} ご担当者様】`,
     `突然のご連絡失礼します。飲食店の清潔の評判を可視化する第三者サービス「キレイン」です。`,
     `貴店の公開されている口コミを拝見したところ、${areaPhrase}に関して清潔面で気になる記述が見られました（${store.negCount}件）。`,
-    `こうした声は、女性・デート・高単価のお客様が“何も言わず二度と来ない”きっかけになりがちです。`,
+    extLine,
     `キレインは、この手の声を24時間自動で見張り、対応した事実をお客様に見える化します（晒しではなく改善の可視化）。`,
     `まずは無料の清潔リスク診断をご用意しました（現地訪問なし・公開口コミからの簡易分析）。ご確認ください：`,
     diag,
@@ -81,12 +110,12 @@ async function textSearch(query, cap) {
       ? `https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken=${token}&key=${KEY}`
       : `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&language=ja&region=jp&type=restaurant&key=${KEY}`;
     const d = await getJSON(u);
-    if (d.status === 'OVER_QUERY_LIMIT') { console.error('⚠️ Google API クォータ超過。中断します。'); break; }
-    if (d.status !== 'OK' && d.status !== 'ZERO_RESULTS') { console.error('⚠️ textsearch status:', d.status, d.error_message || ''); break; }
+    say(`   [textsearch p${page + 1}] status=${d.status || '(なし)'}${d.error_message ? ' / ' + d.error_message : ''} / results=${(d.results || []).length}`);
+    if (d.status && d.status !== 'OK' && d.status !== 'ZERO_RESULTS') break;
     for (const r of d.results || []) found.push({ place_id: r.place_id, name: r.name, addr: r.formatted_address || '', rating: r.rating, total: r.user_ratings_total });
     token = d.next_page_token || null;
     page++;
-    if (token && found.length < cap) await sleep(2200); // next_page_token は有効化まで待ちが要る
+    if (token && found.length < cap) await sleep(2200);
   } while (token && found.length < cap && page < 3);
   return found.slice(0, cap);
 }
@@ -94,30 +123,24 @@ async function textSearch(query, cap) {
 async function placeDetails(placeId) {
   const u = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=name,formatted_address,rating,user_ratings_total,reviews,url&language=ja&key=${KEY}`;
   const d = await getJSON(u);
-  return d.result || null;
+  return { result: d.result || null, status: d.status };
 }
 
-// ── モックデータ（--mock：鍵なしでパイプライン検証）──
+// ── モックデータ（--mock）──
 const MOCK_STORES = [
   { place_id: 'MOCK_A', name: '難波酒場 とら', addr: '大阪市中央区難波1-1', rating: 3.4, total: 210,
-    reviews: [
-      { text: '料理は美味しいけどトイレが少し汚れていて残念でした。' },
-      { text: '店員さんは親切。ただ手洗い場の石鹸が切れていた。' },
-      { text: '価格も手頃で満足です。' },
-    ] },
-  { place_id: 'MOCK_B', name: '天神串カツ 花', addr: '福岡市中央区天神2-2', rating: 3.9, total: 88,
-    reviews: [
-      { text: '店内のたばこの匂いが気になった。換気が弱いかも。' },
-      { text: 'カウンターがベタベタしていて気になりました。' },
-    ] },
+    reviews: [ { text: '料理は美味しいけどトイレが少し汚れていて残念でした。' }, { text: 'カウンターがベタベタしていて気になりました。' }, { text: '価格も手頃で満足です。' } ] },
   { place_id: 'MOCK_C', name: 'きれい食堂', addr: '名古屋市中区栄3-3', rating: 4.6, total: 500,
-    reviews: [
-      { text: 'いつ行ってもピカピカで清潔感があります。' },
-      { text: '料理の量が少し残念。' }, // 清潔ネガではない（料理の残念）＝除外されるべき
-    ] },
+    reviews: [ { text: 'いつ行ってもピカピカで清潔感があります。' }, { text: '料理の量が少し残念。' } ] },
+  // FP検証：食べ物の「香り」を絶賛＝清潔ネガではない → 除外されるべき
+  { place_id: 'MOCK_FP', name: '柚子屋（誤検出テスト）', addr: '大阪市中央区', rating: 4.7, total: 300,
+    reviews: [ { text: '柚子の香りが立った瞬間から期待を裏切らず、料理のクオリティが高くて驚きました。' }, { text: '店内の内装や雰囲気がとても良く、また来たい。残念な点は特にない。' } ] },
+  // 店外検証：通行人・近隣型のクレーム → ext:true で拾うべき
+  { place_id: 'MOCK_EXT', name: '路地裏酒場（店外テスト）', addr: '大阪市浪速区', rating: 4.2, total: 140,
+    reviews: [ { text: '店の前にゴミが散らかっていて、入る前から少し気が引けた。' }, { text: '裏の路地からいつも悪臭がする。近隣として気になる。' } ] },
 ];
 
-// ── 1店を評価してprospectか判定 ──
+// ── 1店を評価してprospectか判定（v2は全て近接確定＝strong）──
 function evalStore(detail) {
   const reviews = detail.reviews || [];
   const negs = [];
@@ -125,31 +148,30 @@ function evalStore(detail) {
     const c = classifyClean(rv.text || rv);
     if (c) negs.push(c);
   }
-  const strong = negs.filter(n => n.strong);          // 清潔エリア語と共起＝高シグナル
-  if (strong.length === 0) return null;               // 強い清潔ネガが無ければ見込みから外す
+  if (negs.length === 0) return { prospect: null, hadReviews: reviews.length > 0, negAny: 0 };
+  const extCount = negs.filter(n => n.ext).length;   // 店外(通行人・近隣)ヒット
   return {
-    place_id: detail.place_id || detail.reference,
-    name: detail.name,
-    addr: detail.formatted_address || detail.addr || '',
-    rating: detail.rating ?? '',
-    total: detail.user_ratings_total ?? detail.total ?? '',
-    negCount: strong.length,
-    negAreas: strong.map(n => n.area),
-    score: strong.length * 2 + new Set(strong.map(n => n.area)).size, // 件数×2＋エリアの広さ
+    prospect: {
+      place_id: detail.place_id || detail.reference,
+      name: detail.name,
+      addr: detail.formatted_address || detail.addr || '',
+      rating: detail.rating ?? '',
+      total: detail.user_ratings_total ?? detail.total ?? '',
+      negCount: negs.length,
+      negAreas: negs.map(n => n.area),
+      extCount,
+      score: negs.length * 2 + new Set(negs.map(n => n.area)).size + extCount * 3, // 店外は強シグナルで加点
+    },
+    hadReviews: reviews.length > 0, negAny: negs.length,
   };
 }
 
-// ── CSV 出力 ──
 function toCSV(rows) {
   const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-  const head = ['順位', '店名', '住所', '評価', '口コミ数', '検知エリア', 'ネガ件数', '診断URL', 'フック文面'];
+  const head = ['順位', '店名', '住所', '評価', '口コミ数', '検知エリア', 'ネガ件数', '店外', '診断URL', 'フック文面'];
   const lines = [head.map(esc).join(',')];
   rows.forEach((r, i) => {
-    lines.push([
-      i + 1, r.name, r.addr, r.rating, r.total,
-      [...new Set(r.negAreas)].join(' / '), r.negCount,
-      `${DIAG_BASE}?s=${r.place_id}`, r.hook,
-    ].map(esc).join(','));
+    lines.push([i + 1, r.name, r.addr, r.rating, r.total, [...new Set(r.negAreas)].join(' / '), r.negCount, r.extCount > 0 ? '○(' + r.extCount + ')' : '', `${DIAG_BASE}?s=${r.place_id}`, r.hook].map(esc).join(','));
   });
   return lines.join('\r\n');
 }
@@ -157,39 +179,48 @@ function toCSV(rows) {
 // ── メイン ──
 async function main() {
   let details = [];
+  say(`▶ 抽出開始  area="${AREA}"  limit=${LIMIT}  loose=${LOOSE}  mock=${MOCK}`);
   if (MOCK) {
-    console.log('🧪 MOCKモード（ネットワーク非使用・パイプライン検証）');
+    say('🧪 MOCKモード（ネットワーク非使用）');
     details = MOCK_STORES;
   } else {
-    console.log(`🔎 エリア検索: "${AREA}"（最大 ${LIMIT} 店）`);
     const list = await textSearch(AREA, LIMIT);
-    console.log(`   候補 ${list.length} 店。口コミを取得して清潔ネガを判定…`);
+    say(`🔎 候補 ${list.length} 店`);
+    let detailFail = 0;
     for (let i = 0; i < list.length; i++) {
-      const d = await placeDetails(list[i].place_id);
-      if (d) { d.place_id = list[i].place_id; details.push(d); }
-      await sleep(220); // クォータに優しく
-      if ((i + 1) % 10 === 0) console.log(`   …${i + 1}/${list.length}`);
+      const { result, status } = await placeDetails(list[i].place_id);
+      if (result) { result.place_id = list[i].place_id; details.push(result); }
+      else { detailFail++; if (detailFail <= 3) say(`   [details ng] ${list[i].name} status=${status}`); }
+      await sleep(220);
     }
+    say(`   詳細取得: 成功 ${details.length} / 失敗 ${detailFail}`);
   }
 
-  const prospects = details.map(evalStore).filter(Boolean).sort((a, b) => b.score - a.score);
+  const evals = details.map(evalStore);
+  const withReviews = evals.filter(e => e.hadReviews).length;
+  const anyNeg = evals.filter(e => e.negAny > 0).length;
+  const prospects = evals.map(e => e.prospect).filter(Boolean).sort((a, b) => b.score - a.score);
   prospects.forEach(p => { p.hook = buildHook(p); });
 
-  const csv = toCSV(prospects);
-  const jsonPath = `${OUT}.json`, csvPath = `${OUT}.csv`;
-  writeFileSync(csvPath, csv);
-  writeFileSync(jsonPath, JSON.stringify(prospects, null, 2));
+  say(`📊 口コミ有り ${withReviews}/${details.length} 店 ・ 何らかのネガ有り ${anyNeg} 店 ・ 見込み ${prospects.length} 店`);
 
-  console.log(`\n✅ 見込み店 ${prospects.length} 件を抽出`);
-  console.log(`   ${csvPath} / ${jsonPath} に出力`);
+  // 診断ヒント
+  if (!MOCK && details.length === 0) {
+    say('💡 候補0＝ほぼキーの問題。①ブラウザ用キー(kirein.net制限)を使ってない？②Places API(旧/legacy)が有効？③課金設定済み？ 上の status を確認（REQUEST_DENIED/INVALID_REQUEST等）。');
+  } else if (prospects.length === 0 && withReviews > 0) {
+    say(`💡 候補はあるが見込み0＝上位5口コミに清潔クレームが目立たない。--loose を付けて再実行するか、エリア/業種を変える（例: 評判の割れやすい業態）。`);
+  } else if (prospects.length === 0 && withReviews === 0 && details.length > 0) {
+    say('💡 詳細は取れたが口コミが空＝reviewsフィールドが返っていない。キーの権限(Places Details の reviews)を確認。');
+  }
+
+  writeFileSync(`${OUT}.csv`, toCSV(prospects));
+  writeFileSync(`${OUT}.json`, JSON.stringify(prospects, null, 2));
+  writeFileSync(`${OUT}.log`, LOG.join('\n') + '\n');
+  say(`\n✅ 出力: ${OUT}.csv / ${OUT}.json / ${OUT}.log`);
   if (prospects.length) {
-    const top = prospects[0];
-    console.log(`\n── 例（1位）─────────────────────`);
-    console.log(`店名: ${top.name}（${top.addr}）`);
-    console.log(`評価 ${top.rating} / 口コミ ${top.total} / 清潔ネガ ${top.negCount}件・エリア: ${[...new Set(top.negAreas)].join('・')}`);
-    console.log(`診断URL: ${DIAG_BASE}?s=${top.place_id}`);
-    console.log(`\n${top.hook}`);
-    console.log(`──────────────────────────────`);
+    const t = prospects[0];
+    say(`\n── 例(1位) ${t.name}（${t.addr}）評価${t.rating}/口コミ${t.total}/ネガ${t.negCount}・${[...new Set(t.negAreas)].join('・')}`);
+    say(t.hook);
   }
 }
-main().catch(e => { console.error('❌', e); process.exit(1); });
+main().catch(e => { say('❌ ' + (e && e.stack || e)); try { writeFileSync(`${OUT}.log`, LOG.join('\n') + '\n'); } catch {} process.exit(1); });
