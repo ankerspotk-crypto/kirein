@@ -257,6 +257,10 @@ function initDiagnose(){
     const p = ac.getPlace();
     if(p && p.place_id) runDiagnosis(p.place_id);
   });
+
+  // 営業フックのリンク（?s=place_id）で開いたら、その店の診断を即実行
+  const pid = new URLSearchParams(location.search).get('s');
+  if(pid) runDiagnosis(pid);
 }
 function runDiagnosis(placeId){
   const el = document.getElementById('result');
