@@ -21,6 +21,7 @@ export default {
     if (url.pathname === '/api/store'       && request.method === 'GET')  return getStore(url, env);
     if (url.pathname === '/api/respond'     && request.method === 'POST') return respond(request, env);
     if (url.pathname === '/api/kirein-post' && request.method === 'POST') return kireinPost(request, env);
+    if (url.pathname === '/api/prospect'    && request.method === 'GET')  return prospect(url, env);
     return json({ error: 'not found' }, 404);
   },
   // 定時：稼働中の各店の口コミを監視→新規ネガをアラート化→店にメール通知
@@ -183,6 +184,59 @@ async function kireinPost(request, env) {
     .bind(store.id, q, area, now, 'kirein').run();
   try { await notifyStore(store, [{ area, quote: q, source: 'kirein' }], env); } catch (e) { /* 送信失敗は無視 */ }
   return json({ ok: true });
+}
+
+// ── 見込み店 抽出（社内営業ツール）──
+// WorkerがGOOGLE_PLACES_KEYで動く＝ローカルにPlacesキー不要。t=PROSPECT_TOKEN で保護（公開リポに値は置かない）。
+async function prospect(url, env) {
+  if (!env.PROSPECT_TOKEN || url.searchParams.get('t') !== env.PROSPECT_TOKEN) return json({ error: 'forbidden' }, 403);
+  const area = (url.searchParams.get('area') || '').trim();
+  if (!area) return json({ error: 'area required（?area=難波 居酒屋）' }, 400);
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10) || 20, 20); // subrequest上限に配慮し最大20
+  const key = env.GOOGLE_PLACES_KEY;
+
+  const ts = await (await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(area)}&language=ja&region=jp&type=restaurant&key=${key}`)).json();
+  if (ts.status && ts.status !== 'OK' && ts.status !== 'ZERO_RESULTS') return json({ error: 'places', status: ts.status, message: ts.error_message || '' }, 502);
+  const cands = (ts.results || []).slice(0, limit);
+
+  const prospects = [];
+  for (const c of cands) {
+    try {
+      const d = await (await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(c.place_id)}&fields=name,formatted_address,rating,user_ratings_total,reviews&language=ja&key=${key}`)).json();
+      const p = d.result; if (!p) continue;
+      const negs = [];
+      for (const rv of (p.reviews || [])) { const f = classify(rv); if (f && f.s === 'neg') negs.push(f); }
+      if (!negs.length) continue;
+      const areas = [...new Set(negs.map(n => n.area))];
+      const extCount = negs.filter(n => n.ext).length;
+      prospects.push({
+        place_id: c.place_id, name: p.name, addr: p.formatted_address || '',
+        rating: p.rating ?? '', total: p.user_ratings_total ?? '',
+        negCount: negs.length, negAreas: areas, extCount,
+        score: negs.length * 2 + areas.length + extCount * 3,
+        diagnose: `https://kirein.net/diagnose.html?s=${c.place_id}`,
+        hook: prospectHook(p.name, areas, negs.length, extCount, c.place_id),
+      });
+    } catch (e) { /* この店はスキップ */ }
+  }
+  prospects.sort((a, b) => b.score - a.score);
+  return json({ area, scanned: cands.length, count: prospects.length, prospects });
+}
+function prospectHook(name, areas, negCount, extCount, placeId) {
+  const areaPhrase = areas.filter(a => a !== '清潔全般').join('・') || '清潔面';
+  const extLine = extCount > 0
+    ? '特に店外（店前・ゴミ置き場・裏・匂い）に関する記述は、お客様だけでなく通行人・近隣の方の目にも触れ、近隣トラブルや行政への相談に発展しやすい点です。'
+    : 'こうした声は、女性・デート・高単価のお客様が“何も言わず二度と来ない”きっかけになりがちです。';
+  return [
+    `【${name} ご担当者様】`,
+    '突然のご連絡失礼します。飲食店の清潔の評判を可視化する第三者サービス「キレイン」です。',
+    `貴店の公開されている口コミを拝見したところ、${areaPhrase}に関して清潔面で気になる記述が見られました（${negCount}件）。`,
+    extLine,
+    'キレインは、この手の声を24時間自動で見張り、対応した事実をお客様に見える化します（晒しではなく改善の可視化）。',
+    'まずは無料の清潔リスク診断をご用意しました（現地訪問なし・公開口コミからの簡易分析）。ご確認ください：',
+    `https://kirein.net/diagnose.html?s=${placeId}`,
+    '※ご不要でしたら本メッセージは破棄してください。／キレイン運営 kirein.jp@gmail.com',
+  ].join('\n');
 }
 
 // ── 清潔ワード解析 v2（精度優先・近接ルール／店内＋店外。prospect.mjs・diagnose.html と同一）──
