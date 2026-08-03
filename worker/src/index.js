@@ -185,26 +185,35 @@ async function kireinPost(request, env) {
   return json({ ok: true });
 }
 
-// ── 清潔ワード解析（diagnose.html と同じロジックを移植）──
+// ── 清潔ワード解析 v2（精度優先・近接ルール／店内＋店外。prospect.mjs・diagnose.html と同一）──
 const AREAS = [
-  { k: 'トイレ',        re: /トイレ|お手洗|化粧室|洗面|便所/ },
-  { k: 'におい・換気',  re: /にお|匂|臭|ニオイ|香り|煙|タバコ|たばこ|喫煙|換気|空気/ },
-  { k: '席・テーブル',  re: /席|テーブル|座席|シート|カウンター/ },
-  { k: '床・店内',      re: /床|店内|通路|壁|内装|入口|階段/ },
-  { k: '食器・グラス',  re: /食器|グラス|コップ|お皿|カトラリー|箸|おしぼり/ },
-  { k: '手洗い・衛生',  re: /手洗|石鹸|石けん|消毒|衛生/ },
+  { k: 'トイレ',           re: /トイレ|お手洗|化粧室|洗面所?|便所/ },
+  { k: '席・テーブル',     re: /テーブル|座席|カウンター|お?席|シート/ },
+  { k: '床・店内',         re: /床|店内|通路|内装|階段/ },
+  { k: '食器・グラス',     re: /食器|グラス|コップ|お皿|カトラリー|お?箸|おしぼり/ },
+  { k: '手洗い・衛生',     re: /手洗|石鹸|石けん|消毒/ },
+  { k: '店前・入口',       re: /店[のの　 ]?前|店頭|入口|入り口|玄関|軒先|外観|外壁/, ext: true },
+  { k: 'ゴミ置き場',       re: /ゴミ|ごみ|生ゴミ|ゴミ袋|ゴミ置|ゴミ捨/, ext: true },
+  { k: '裏・バックヤード', re: /裏[口手にのを　 ]|バックヤード|路地|側溝|排水溝|溝/, ext: true },
+  { k: '外の匂い・排気',   re: /排気|換気扇|ダクト|近隣|ご近所|住民/, ext: true },
 ];
-const NEG = /汚[いくれ]|きたな|不潔|くさ[いく]|臭[いく]|ベタベタ|べたつ|ぬめ|ほこり|埃|カビ|かび|虫|ゴキブリ|コバエ|ハエ|散らか|落ちて(い|た)|古[くび].{0,3}汚|残念|気にな|清掃.{0,5}(され|してな|不足|甘)|掃除.{0,5}(され|してな|不足|甘)/;
-const POS = /(きれい|綺麗|キレイ|清潔|ピカピカ|衛生的|行き届|清潔感)/;
+const HARD_NEG = /汚[いくれかっ]|きたな|不潔|べたべた|ベタベタ|べたつ|ぬめ|ぬる|ほこり|埃|カビ|かび|虫|ゴキブリ|コバエ|ハエ|ネズミ|散らか|放置|溜ま|山積|べとべと/;
+const NEG_SMELL = /悪臭|異臭|カビ臭|かび臭|下水.{0,3}臭|ドブ臭|生ゴミ.{0,3}臭|排水.{0,3}臭|臭[いくかっ]|くさ[いくかっ]|におい.{0,5}(気にな|きつ|ひど|する)|匂い.{0,5}(気にな|きつ|ひど)|タバコ.{0,5}(臭|きつ|ひど|充満)|煙.{0,5}(充満|きつ|ひど)/;
+const NEG_SMELL_STANDALONE = /悪臭|異臭|カビ臭|かび臭|下水.{0,3}臭|ドブ臭|生ゴミ.{0,3}臭/;
+const POS = /(きれい|綺麗|キレイ|清潔|ピカピカ|衛生的|行き届|手入れ.{0,3}(され|行き届)|清潔感)/;
 function classify(rv) {
   const text = rv && rv.text;
   if (!text) return null;
-  const hasArea = AREAS.some(a => a.re.test(text));
-  const neg = NEG.test(text), pos = POS.test(text);
-  if (!hasArea && !neg && !pos) return null;
-  const area = (AREAS.find(a => a.re.test(text)) || {}).k || '清潔全般';
-  if (neg) return { s: 'neg', area, text };
-  if (pos) return { s: 'pos', area, text };
+  const N = 16;
+  for (const a of AREAS) {
+    const re = new RegExp(a.re.source, 'g'); let m;
+    while ((m = re.exec(text))) {
+      const win = text.slice(Math.max(0, m.index - N), m.index + m[0].length + N);
+      if (HARD_NEG.test(win) || NEG_SMELL.test(win)) return { s: 'neg', area: a.k, ext: !!a.ext, text };
+    }
+  }
+  if (NEG_SMELL_STANDALONE.test(text)) return { s: 'neg', area: '外の匂い・排気', ext: true, text };
+  if (POS.test(text)) return { s: 'pos', area: '清潔全般', ext: false, text };
   return null;
 }
 
