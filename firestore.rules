@@ -16,9 +16,13 @@ service cloud.firestore {
     match /posts/{docId} {
       // 読取：レビュー表示のため公開（ただし公開docにネガ/投稿者UIDは載せない＝下のcreate検証で強制）
       allow read: if true;
-      // 作成：認証ユーザーのみ＋公開docにネガ/投稿者UIDを混ぜさせない
+      // 作成：認証ユーザーのみ＋公開docにネガ/投稿者UIDを混ぜさせない＋暴発/スパム抑制
       allow create: if request.auth != null
-                    && !request.resource.data.keys().hasAny(['negative_items', 'negative_comment', 'user_uid']);
+                    && !request.resource.data.keys().hasAny(['negative_items', 'negative_comment', 'user_uid'])
+                    && request.resource.data.size() < 40                                  // フィールド数の暴発を防止
+                    && (!('comment' in request.resource.data)                              // コメントは1000字まで
+                        || (request.resource.data.comment is string
+                            && request.resource.data.comment.size() < 1000));
       // 更新・削除：不可（投稿は不変。運営の掃除は Admin SDK＝ルールをバイパス）
       allow update, delete: if false;
 
