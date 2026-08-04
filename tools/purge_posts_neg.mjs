@@ -23,7 +23,8 @@
 //     3) 実行:  node purge_posts_neg.mjs --apply
 //   ※ 既定は DRY-RUN（下見）。実際に書き換えるのは末尾 --apply を付けた時だけ。
 
-import admin from 'firebase-admin';
+import { initializeApp, cert, applicationDefault } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { readFileSync } from 'node:fs';
 
 const PRIVATE_FIELDS = ['negative_items', 'negative_comment', 'user_uid'];
@@ -49,15 +50,14 @@ async function main() {
       console.error(`✗ 鍵の project_id が ${TARGET_PROJECT} ではありません（${sa.project_id}）。誤爆防止のため中止。`);
       process.exit(1);
     }
-    admin.initializeApp({ credential: admin.credential.cert(sa) });
+    initializeApp({ credential: cert(sa) });
     projectId = sa.project_id;
   } else {
     // 方式B：ADC（gcloud auth application-default login 済み想定・鍵ファイル不要）
-    admin.initializeApp({ credential: admin.credential.applicationDefault(), projectId: TARGET_PROJECT });
+    initializeApp({ credential: applicationDefault(), projectId: TARGET_PROJECT });
     projectId = TARGET_PROJECT;
   }
-  const db = admin.firestore();
-  const FieldValue = admin.firestore.FieldValue;
+  const db = getFirestore();
 
   console.log(`モード: ${APPLY ? '⚠️  APPLY（本番を書き換えます）' : 'DRY-RUN（下見のみ・書き込みなし）'}`);
   console.log(`認証: ${kp ? 'サービスアカウント鍵' : 'ADC（gcloud）'} / 対象プロジェクト: ${projectId}\n`);
