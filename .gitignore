@@ -5,3 +5,8 @@ assets/.DS_Store
 *serviceAccount*.json
 *-sa.json
 kirein-*.json
+
+# wrangler ローカル実設定（実database_id等・公開リポに出さない）
+worker/wrangler.local.toml
+worker/.wrangler/
+worker/node_modules/

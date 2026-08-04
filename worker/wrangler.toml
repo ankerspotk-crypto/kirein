@@ -1,3 +1,8 @@
+# ⚠️ これは雛形（プレースホルダ）。本番デプロイにこのファイルを使わないこと。
+#   本番の実設定（実 database_id / worker名 young-mud-d73a / 互換日2026-07-31）は
+#   gitignore された worker/wrangler.local.toml にある。デプロイは必ず:
+#     cd worker && npx wrangler deploy --keep-vars -c wrangler.local.toml
+#   CFアカウントは ankerspot.k@gmail.com（kirein.jp ではない・そちらは空）。
 name = "kirein-api"
 main = "src/index.js"
 compatibility_date = "2024-11-01"
