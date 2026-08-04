@@ -808,14 +808,31 @@ function getPosts(){
 }
 
 // Firestore に投稿を保存（非同期・compat版）
+// 【Phase3②】公開 posts にはネガ生content・投稿者UIDを載せない（世界に読めるので公開項目のみ）。
+//   ネガ生content／投稿者UIDは posts/{id}/private/detail へ隔離＝クライアント読取不可（店本人/運営のみ）。
 async function savePostToFirestore(post){
   if(!window.db) return;
   try {
-    await window.db.collection('posts').add({
-      ...post,
+    const { negative_items, negative_comment, user_uid, ...pub } = post;
+    const ref = await window.db.collection('posts').add({
+      ...pub,
       created_at: firebase.firestore.FieldValue.serverTimestamp()
     });
-    console.log('✅ Firestore に保存完了');
+    console.log('✅ Firestore に保存完了（公開項目）');
+    // ネガ生content・投稿者情報 → 非公開サブコレクション（read:false／店本人・運営のみ）
+    const hasNeg = (Array.isArray(negative_items) && negative_items.length > 0)
+                || (typeof negative_comment === 'string' && negative_comment.length > 0);
+    if(hasNeg || user_uid){
+      try {
+        await ref.collection('private').doc('detail').set({
+          negative_items:   negative_items   || [],
+          negative_comment: negative_comment || '',
+          user_uid:         user_uid         || null,
+          place_id:         pub.place_id     || null,
+          created_at: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } catch(e){ console.warn('⚠️ private/detail 保存スキップ（公開投稿は成立）:', e); }
+    }
   } catch(e) {
     console.error('❌ Firestore 保存エラー:', e);
   }

@@ -8,26 +8,47 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── 投稿（消費者の清潔評価）──────────────────────────
+    // 【設計・Phase3②】Firestoreは「読取」をフィールド単位で絞れない＝read:true は
+    //   ドキュメントを丸ごと返す。よって「ネガ生content・投稿者情報は非公開」は
+    //   “公開ドキュメントにそれらを保存しない”ことでしか担保できない。
+    //   → 公開 posts は公開項目のみ。ネガ生content／投稿者UIDは posts/{id}/private へ隔離し
+    //     クライアント読取を一切拒否（店本人へは D1/ダッシュボードのトークン施錠経路で届ける）。
     match /posts/{postId} {
-      // 読取：レビュー表示のため公開（レビューサイトとして成立させる）
-      //  ※「ネガ詳細は店舗限定」を厳密にするには、負の情報を別サブコレクションへ
-      //    分離するのが正攻法（Phase2）。現状は公開読取＝MVP割り切り。
+      // 読取：レビュー表示のため公開（レビューサイトとして成立させる）。
+      //  ※この公開ドキュメントにはネガ生content・投稿者UIDを載せない（下の create 検証で強制）。
       allow read: if true;
 
-      // 作成：匿名で許可。ただし最低限の検証で荒らしを弾く
-      allow create: if isValidPost();
+      // 作成：匿名で許可。荒らし＋“公開docにネガ/投稿者を混ぜる”のを弾く
+      allow create: if isValidPublicPost();
 
       // 更新・削除：不可（投稿は不変＝改ざん・荒らし・世論操作を防ぐ）
       allow update, delete: if false;
+
+      // ── 非公開：ネガ生content・投稿者情報（店本人／運営のみ）──────────
+      //  クライアントからの読取は一切不可。運営は Admin SDK / サービスアカウント
+      //  （ルールをバイパス）でのみ参照する。＝“生ネガ・投稿者は非公開”の商品の約束を担保。
+      match /private/{docId} {
+        allow read: if false;                 // 誰にも見せない
+        allow create: if isValidPrivateDetail();
+        allow update, delete: if false;
+      }
     }
 
-    function isValidPost() {
+    // 公開ドキュメント：place_id 必須＋暴発防止＋ネガ/投稿者UIDの混入禁止
+    function isValidPublicPost() {
       let d = request.resource.data;
       return d.keys().hasAll(['place_id'])
           && d.place_id is string
           && d.place_id.size() > 0
           && d.place_id.size() < 300
-          && d.size() < 40;                 // フィールド数の暴発を防止
+          && d.size() < 40                    // フィールド数の暴発を防止
+          && !d.keys().hasAny(['negative_items', 'negative_comment', 'user_uid']);
+    }
+    // 非公開ドキュメント：投稿に付随して書き込みだけ許可（読取は上で全拒否）
+    function isValidPrivateDetail() {
+      let d = request.resource.data;
+      return d.size() < 12
+          && (!('place_id' in d) || d.place_id is string);
     }
 
     // ── 店舗（オーナー登録）──────────────────────────────
