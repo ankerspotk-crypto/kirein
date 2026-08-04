@@ -10,10 +10,12 @@ CREATE TABLE IF NOT EXISTS stores (
   stripe_sub      TEXT,
   status          TEXT,               -- active | canceled
   created         TEXT,
-  last_checked    TEXT                -- Ph2: 最後に口コミ監視した時刻
+  last_checked    TEXT,               -- Ph2: 最後に口コミ監視した時刻
+  token           TEXT                -- Ph3: 店本人だけのダッシュボード閲覧トークン（決済時に発行しメールで通知）
 );
 -- 既存D1に後から列を足す場合（初回CREATE後に一度だけ）:
 --   wrangler d1 execute kirein --remote --command "ALTER TABLE stores ADD COLUMN email TEXT"
+--   wrangler d1 execute kirein --remote --command "ALTER TABLE stores ADD COLUMN token TEXT"
 
 -- Ph2: 口コミ監視で検知した新規ネガのアラート
 CREATE TABLE IF NOT EXISTS alerts (

@@ -138,6 +138,9 @@ function localPlace(){
 function storeId(){
   return qp.get('s') || (localPlace()||{}).id || '';
 }
+function tokenOf(){ return qp.get('t') || (localPlace()||{}).t || ''; }
+// メールのリンク(?t=)で来たら本人トークンを退避（再訪・決済復帰でも本人だけが見られる）
+(function persistToken(){ try{ const t=qp.get('t'); if(t){ const lp=localPlace()||{}; lp.t=t; if(!lp.id && qp.get('s')) lp.id=qp.get('s'); localStorage.setItem(LS_KEY, JSON.stringify(lp)); } }catch(e){} })();
 
 const RESP={
   responding:{l:'お客様の声に対応中',c:'var(--amber)'},
@@ -180,6 +183,18 @@ function renderActive(st){
 
   const certUrl=location.origin+'/cert.html?s='+encodeURIComponent(st.id);
 
+  // 本人トークン一致（Worker が authed:true を返す）時だけ、生ネガ（D1＋Firestore）と対応フォームを出す
+  const authed = !!st.authed;
+  const authNotice = `
+    <div class="card"><div class="card-b">
+      <div class="hero" style="box-shadow:none;padding:26px 22px">
+        <div class="ico">🔒</div>
+        <h2>ダッシュボードを開くには認証が必要です</h2>
+        <p>清潔の声の確認と、お客様への対応の公開は、<b>お申し込み時にお送りしたメール内のリンク</b>からアクセスしてください。リンクが見当たらない場合は、下記までご連絡ください。</p>
+        <a class="btn" href="mailto:kirein.jp@gmail.com" style="background:var(--mint);color:#062019">運営に問い合わせる</a>
+      </div>
+    </div></div>`;
+
   $('#app').innerHTML=`
     <div class="card">
       <div class="st-head">
@@ -192,6 +207,7 @@ function renderActive(st){
       </div>
     </div>
 
+    ${authed ? `
     <div class="card">
       <div class="card-h"><h2>① 気づく — 清潔の声</h2><span class="sub">店舗だけが見る画面</span></div>
       <div class="card-b">
@@ -222,7 +238,7 @@ function renderActive(st){
         <div class="saved" id="savedMsg"></div>
         <div class="hint">公開されるのは「対応した事実」とこのコメントだけ。<b>ネガティブな口コミの中身・投稿者情報は公開されません。</b>晒しではなく、清潔に向き合う姿勢を見える化します。</div>
       </div>
-    </div>
+    </div>` : authNotice}
 
     <div class="card">
       <div class="card-h"><h2>お客様に見せるページ</h2><span class="sub">QR / SNS で共有</span></div>
@@ -236,7 +252,7 @@ function renderActive(st){
       </div>
     </div>`;
 
-  loadKireinVoices(st.id);
+  if(authed) loadKireinVoices(st.id);
 }
 
 /* ── キレインのユーザーの声（Firestore・過去分含む／active の店だけ描画）── */
@@ -285,7 +301,7 @@ window.saveResp=async function(id){
   btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='公開しています…';
   try{
     const res=await fetch(API+'/respond',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({storeId:id,status:RESP_STATE,comment})});
+      body:JSON.stringify({storeId:id,status:RESP_STATE,comment,token:tokenOf()})});
     const j=await res.json();
     if(res.ok&&j.ok){ msg.style.color='var(--mint)'; msg.textContent='✓ お客様ページに公開しました'; }
     else{ msg.style.color='var(--red)'; msg.textContent='公開に失敗しました（'+(j.error||res.status)+'）'; }
@@ -323,7 +339,8 @@ async function load(id,polling){
   if(mock){ return renderMock(mock,id); }
   let j=null, ok=false;
   try{
-    const res=await fetch(API+'/store?s='+encodeURIComponent(id));
+    const tk=tokenOf();
+    const res=await fetch(API+'/store?s='+encodeURIComponent(id)+(tk?'&t='+encodeURIComponent(tk):''));
     j=await res.json(); ok=res.ok;
   }catch(e){ /* ネットワーク */ }
   if(ok && j && j.status==='active'){ renderActive(j); return; }
@@ -345,7 +362,7 @@ function renderMock(mode,id){
   if(mode==='pending'){ $('#app').innerHTML='';
     renderPending(id,'サンプル食堂'); return; }
   renderActive({
-    id:id||'mockplace', name:'サンプル食堂 栄店', status:'active',
+    id:id||'mockplace', name:'サンプル食堂 栄店', status:'active', authed: mode!=='noauth',
     last_checked:'2026-07-31T18:20:00+09:00',
     response:(mode==='active2')?{status:'responded',comment:'手洗い場の清掃を1日3回に増やしました。',updated:'2026-07-30T12:00:00+09:00'}:null,
     alerts:(mode==='active2')?[]:[

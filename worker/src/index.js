@@ -27,7 +27,7 @@ export default {
   // 定時：稼働中の各店の口コミを監視→新規ネガをアラート化→店にメール通知
   async scheduled(event, env) {
     const { results } = await env.DB.prepare(
-      "SELECT id, place_id, name, email FROM stores WHERE status='active' AND place_id IS NOT NULL AND place_id <> ''"
+      "SELECT id, place_id, name, email, token FROM stores WHERE status='active' AND place_id IS NOT NULL AND place_id <> ''"
     ).all();
     for (const store of results || []) {
       try { await monitorStore(store, env); } catch (e) { /* この店はスキップ */ }
@@ -48,13 +48,20 @@ async function webhook(request, env) {
     const placeId = o.client_reference_id || (o.metadata && o.metadata.place_id) || null;
     const email = (o.customer_details && o.customer_details.email) || o.customer_email || '';
     if (placeId) {
+      const newToken = crypto.randomUUID();
       await env.DB.prepare(
-        `INSERT INTO stores (id, place_id, email, stripe_customer, stripe_sub, status, created)
-         VALUES (?,?,?,?,?, 'active', ?)
+        `INSERT INTO stores (id, place_id, email, stripe_customer, stripe_sub, status, created, token)
+         VALUES (?,?,?,?,?, 'active', ?, ?)
          ON CONFLICT(id) DO UPDATE SET status='active',
            stripe_customer=excluded.stripe_customer, stripe_sub=excluded.stripe_sub,
-           email=CASE WHEN excluded.email<>'' THEN excluded.email ELSE stores.email END`
-      ).bind(placeId, placeId, email, o.customer || '', o.subscription || '', now).run();
+           email=CASE WHEN excluded.email<>'' THEN excluded.email ELSE stores.email END,
+           token=CASE WHEN stores.token IS NULL OR stores.token='' THEN excluded.token ELSE stores.token END`
+      ).bind(placeId, placeId, email, o.customer || '', o.subscription || '', now, newToken).run();
+      // 決済直後：本人専用ダッシュボードリンク（?s=&t=）をメールで渡す＝認証の受け渡し
+      try {
+        const st = await env.DB.prepare('SELECT id,name,email,token FROM stores WHERE id=?').bind(placeId).first();
+        if (st) await notifyWelcome(st, env);
+      } catch (e) { /* 送信失敗は監視に影響させない */ }
     }
   } else if (ev.type === 'customer.subscription.deleted') {
     await env.DB.prepare(`UPDATE stores SET status='canceled' WHERE stripe_sub=?`)
@@ -101,7 +108,8 @@ async function notifyStore(store, fresh, env) {
   if (!env.RESEND_API_KEY || !env.ALERT_FROM) return;   // 未設定なら送らない
   const to = store.email;
   if (!to) return;                                       // 宛先不明なら送らない
-  const dash = (env.DASHBOARD_URL || 'https://kirein.net/dashboard.html') + '?s=' + encodeURIComponent(store.id);
+  const dash = (env.DASHBOARD_URL || 'https://kirein.net/dashboard.html') + '?s=' + encodeURIComponent(store.id)
+    + (store.token ? '&t=' + encodeURIComponent(store.token) : '');
   const name = store.name || 'お店';
   const srcAllKirein = fresh.every(a => a.source === 'kirein');
   const srcLabel = srcAllKirein ? 'キレインのユーザー' : 'Googleの公開口コミ';
@@ -129,29 +137,62 @@ async function notifyStore(store, fresh, env) {
   });
   if (!res.ok) throw new Error('resend ' + res.status);
 }
+
+// ── 決済直後の歓迎メール：本人専用ダッシュボードリンク（?s=&t=）を渡す ──
+async function notifyWelcome(store, env) {
+  if (!env.RESEND_API_KEY || !env.ALERT_FROM || !store.email || !store.token) return;
+  const dash = (env.DASHBOARD_URL || 'https://kirein.net/dashboard.html')
+    + '?s=' + encodeURIComponent(store.id) + '&t=' + encodeURIComponent(store.token);
+  const name = store.name || 'お店';
+  const html =
+    `<div style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;max-width:560px;margin:0 auto;color:#182320">`
+    + `<div style="background:#0e3a33;color:#fff;padding:22px 24px;border-radius:14px 14px 0 0">`
+    + `<div style="font-size:13px;opacity:.85">キレイン｜見張りを開始しました</div>`
+    + `<div style="font-size:19px;font-weight:700;margin-top:4px">${escHtml(name)}の清潔の評判を、24時間見張ります</div></div>`
+    + `<div style="border:1px solid #e4eae7;border-top:none;border-radius:0 0 14px 14px;padding:20px 24px">`
+    + `<p style="font-size:13px;color:#5d6b66;line-height:1.8;margin:0 0 14px">お申し込みありがとうございます。下のボタンから、あなたのお店専用のダッシュボードを開けます。<b>このリンクはあなた（店舗）だけのものです。第三者には共有しないでください。</b></p>`
+    + `<div style="margin:18px 0;text-align:center"><a href="${dash}" style="display:inline-block;background:#25b598;color:#062019;font-weight:700;text-decoration:none;padding:13px 28px;border-radius:999px;font-size:14px">ダッシュボードを開く →</a></div>`
+    + `<p style="font-size:12px;color:#5d6b66;line-height:1.8">ダッシュボードでは、届いた清潔の声の確認と、お客様への対応の公開ができます。届いた声の中身・投稿者はお客様には公開されません。</p>`
+    + `<p style="font-size:11px;color:#9fb3ac;line-height:1.7;margin:18px 0 0">解約はStripeからの明細メールでいつでも／お問い合わせ kirein.jp@gmail.com<br>キレイン ｜ 清潔の声の自動見張り</p></div></div>`;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: env.ALERT_FROM, to: [store.email], subject: `【キレイン】${name}の見張りを開始しました（ダッシュボードのご案内）`, html }),
+  });
+  if (!res.ok) throw new Error('resend ' + res.status);
+}
 function escHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 // ── 店舗データ取得（dashboard/cert が読む）──
 async function getStore(url, env) {
   const id = url.searchParams.get('s');
   if (!id) return json({ error: 'id required' }, 400);
-  const store = await env.DB.prepare('SELECT id,name,status,last_checked FROM stores WHERE id=?').bind(id).first();
+  const token = url.searchParams.get('t') || '';
+  const store = await env.DB.prepare('SELECT id,name,status,last_checked,token FROM stores WHERE id=?').bind(id).first();
   if (!store) return json({ error: 'not found', status: 'none' }, 404);
   const resp = await env.DB.prepare('SELECT status,comment,updated FROM responses WHERE store_id=?').bind(id).first();
-  const { results: alerts } = await env.DB.prepare(
-    'SELECT quote,area,detected,source FROM alerts WHERE store_id=? ORDER BY id DESC LIMIT 10'
-  ).bind(id).all();
-  return json({ ...store, response: resp || null, alerts: alerts || [] });
+  // 生ネガ(alerts)は本人トークン一致時だけ返す。cert.html(公開)は token 無し＝alertsは出ない。
+  const authed = !!(token && store.token && token === store.token);
+  let alerts = [];
+  if (authed) {
+    const r = await env.DB.prepare(
+      'SELECT quote,area,detected,source FROM alerts WHERE store_id=? ORDER BY id DESC LIMIT 10'
+    ).bind(id).all();
+    alerts = r.results || [];
+  }
+  const { token: _t, ...pub } = store;   // token 自体はレスポンスに含めない
+  return json({ ...pub, response: resp || null, alerts, authed });
 }
 
 // ── 店舗が対応コメントを更新（dashboardから）──
 async function respond(request, env) {
   let b; try { b = await request.json(); } catch { return json({ error: 'bad json' }, 400); }
-  const { storeId, status, comment } = b || {};
+  const { storeId, status, comment, token } = b || {};
   if (!storeId) return json({ error: 'storeId required' }, 400);
-  // 稼働中の店だけ更新可
-  const s = await env.DB.prepare("SELECT status FROM stores WHERE id=?").bind(storeId).first();
+  // 稼働中の店＋本人トークン一致時だけ更新可
+  const s = await env.DB.prepare("SELECT status,token FROM stores WHERE id=?").bind(storeId).first();
   if (!s || s.status !== 'active') return json({ error: 'not active' }, 403);
+  if (!token || token !== s.token) return json({ error: 'forbidden' }, 403);
   await env.DB.prepare(
     `INSERT INTO responses (store_id,status,comment,updated) VALUES (?,?,?,?)
      ON CONFLICT(store_id) DO UPDATE SET status=excluded.status, comment=excluded.comment, updated=excluded.updated`
@@ -166,7 +207,7 @@ async function kireinPost(request, env) {
   const placeId = (b.place_id || '').toString().trim();
   if (!placeId) return json({ error: 'place_id required' }, 400);
 
-  const store = await env.DB.prepare("SELECT id,name,email,status FROM stores WHERE id=?").bind(placeId).first();
+  const store = await env.DB.prepare("SELECT id,name,email,status,token FROM stores WHERE id=?").bind(placeId).first();
   if (!store || store.status !== 'active') return json({ ok: true, skipped: 'not-active' });  // 非契約は無視（通知しない）
 
   const rating = Number(b.rating);
