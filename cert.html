@@ -58,6 +58,9 @@ h1,h2,h3{font-family:"Noto Serif JP",serif}
 .resp-comment::before{content:"“";color:var(--mint);font-weight:700}
 .resp-comment::after{content:"”";color:var(--mint);font-weight:700}
 .resp-date{font-size:11.5px;color:var(--muted);margin-top:10px}
+.claimbtn{display:block;text-align:center;margin-top:16px;padding:15px;border-radius:12px;background:var(--mint);color:#06231d;font-weight:800;font-size:15px;text-decoration:none}
+.claimbtn:hover{filter:brightness(1.05)}
+.claimnote{font-size:11px;color:var(--muted);margin-top:12px;line-height:1.8;text-align:center}
 
 /* フッター説明 */
 .about{margin-top:20px;background:var(--card);border-radius:var(--radius);padding:24px 26px;box-shadow:var(--shadow)}
@@ -150,16 +153,73 @@ function showErr(){
     <p>このQRコード／リンクに対応する店舗が見つかりませんでした。<br>店舗の方は キレイン運営（kirein.jp@gmail.com）までご連絡ください。</p></div>`;
 }
 
+/* ===== 未登録店＝Claim招待ビュー（店が自分で気づいて入ってくる受け皿） ===== */
+function claimView(id,name,addr){
+  const nm=name||'この店舗';
+  const q='./start.html?s='+encodeURIComponent(id)
+        +(name?('&n='+encodeURIComponent(name)):'')
+        +(addr?('&a='+encodeURIComponent(addr)):'');
+  $('#app').innerHTML=`
+    <div class="cert">
+      <div class="cert-top">
+        <div class="cert-verified">お客様の声が、届く場所</div>
+        <div class="cert-seal">📣</div>
+        <div class="cert-h">${esc(nm)} の<br>清潔の声を、受け付けています。</div>
+        <div class="cert-sub">キレインでは、お客様がこの店舗の清潔について声を届けられます。<br>店舗の方は、届いた声を確認し、対応を公表できます。</div>
+      </div>
+      <div class="watch">
+        <h3>店舗の方へ</h3>
+        <div class="row"><div class="ic">📨</div><div class="tx"><div class="t">届いた声を確認できる</div><div class="s">お客様から届いた清潔の声を、店舗だけが確認できます。中身は一般には公開されません。</div></div></div>
+        <div class="row"><div class="ic">🔧</div><div class="tx"><div class="t">対応を公表できる</div><div class="s">「対応中／対応済み」を、このページでお客様に見せられます。</div></div></div>
+        <div class="row"><div class="ic">👀</div><div class="tx"><div class="t">これからの声も見張る</div><div class="s">Google等の公開口コミの清潔の声も、24時間自動でチェックします。</div></div></div>
+      </div>
+      <div class="response">
+        <div class="resp-note" style="margin-top:0">この店舗はまだキレインの見張りを始めていません。<b>店舗の方は、月¥3,000でこの店舗の清潔の声を確認・対応できます。</b></div>
+        <a class="claimbtn" href="${q}">この店舗の見張りを始める（月¥3,000）→</a>
+        <div class="claimnote">いつでも解約可。基本は自動監視、必要に応じて覆面調査員が調査することがあります。<br>キレインは清潔さを保証・認証するものではなく、公開されている声の中身・投稿者情報を公開することもありません。</div>
+      </div>
+    </div>
+    <div class="about">
+      <h3>キレインとは？</h3>
+      <p>キレインは、お客様が感じた店舗の清潔面の声を店舗に届け、店舗がどう対応したかを見える化する第三者チェックサービスです。清潔さそのものを保証・認証するものではなく、ネガティブな声の中身や投稿者情報を公開することもありません。</p>
+    </div>`;
+  document.title=`${nm}｜キレイン｜清潔の声を受け付けています`;
+}
+let _mapsLoading=false,_mapsReady=false;
+function loadMaps(cb){
+  if(_mapsReady){ cb(); return; }
+  if(_mapsLoading){ setTimeout(()=>loadMaps(cb),300); return; }
+  _mapsLoading=true;
+  window.__certMapsCb=()=>{ _mapsReady=true; cb(); };
+  const s=document.createElement('script');
+  s.src='https://maps.googleapis.com/maps/api/js?key=AIzaSyDRfloVijkhdUhF9v_DG7O3JV17Fqd9V7w&libraries=places&language=ja&callback=__certMapsCb';
+  s.async=true; s.onerror=()=>{}; document.head.appendChild(s);
+}
+function renderClaim(id){
+  const n=qp.get('n'), a=qp.get('a');
+  claimView(id,n,a);                 // まず即描画（リンクに名前があればそれで完成）
+  if(n) return;                      // 名前あり＝Places不要
+  loadMaps(()=>{                     // 名前なし＝Placesで店名を後追い解決
+    try{
+      const svc=new google.maps.places.PlacesService(document.createElement('div'));
+      svc.getDetails({placeId:id,fields:['name','formatted_address']},(p,st)=>{
+        if(st===google.maps.places.PlacesServiceStatus.OK && p && p.name) claimView(id,p.name,p.formatted_address);
+      });
+    }catch(e){}
+  });
+}
+
 async function main(){
   const id=qp.get('s');
   if(!id){ showErr(); return; }
   const mock=qp.get('mock');
+  if(mock==='claim'){ return claimView(id,'サンプル食堂 栄店','愛知県名古屋市中区栄3-1-1'); }
   if(mock){ return render(MOCK(mock,id)); }
   try{
     const res=await fetch(API+'/store?s='+encodeURIComponent(id));
     const j=await res.json();
     if(res.ok && j && j.status==='active'){ render(j); }
-    else showErr();
+    else renderClaim(id);
   }catch(e){
     $('#app').innerHTML=`<div class="err"><h2>読み込みに失敗しました</h2><p>通信環境をご確認のうえ、再度お試しください。</p></div>`;
   }

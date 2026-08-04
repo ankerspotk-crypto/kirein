@@ -39,7 +39,7 @@
   <div class="wrap">
     <div class="step">見張りプラン ¥3,000/月</div>
     <h1>見張りを始める店を選ぶ</h1>
-    <p class="lead">店名を入れて選ぶと、その店のGoogle口コミを自動監視します。次の画面（Stripe）でお支払い。現地訪問はありません。</p>
+    <p class="lead">店名を入れて選ぶと、その店のGoogle口コミを自動監視します。次の画面（Stripe）でお支払い。必要に応じて覆面調査員が調査することもあります。</p>
     <div class="card">
       <label>🔍 あなたのお店</label>
       <input id="storeInput" type="text" placeholder="例：〇〇食堂 名古屋 栄" autocomplete="off" />
@@ -80,6 +80,35 @@ function initStart(){
     go.onclick = ()=>{ try{ localStorage.setItem('kirein_store',
       JSON.stringify({ id:p.place_id, name:p.name||'', addr:p.formatted_address||'' })); }catch(e){} };
   });
+
+  applyPreselect();
+}
+
+// cert.html等からの ?s=place_id（+n,a）を受けて店を事前選択＝claim動線をつなぐ
+function applyPreselect(){
+  const sp=new URLSearchParams(location.search);
+  const s=sp.get('s'); if(!s) return;
+  const setPicked=(name,addr)=>{
+    picked={ place_id:s, name:name||'選択したお店', formatted_address:addr||'' };
+    document.getElementById('storeInput').value = picked.name;
+    document.getElementById('pnm').textContent = picked.name;
+    document.getElementById('pad').textContent = picked.formatted_address;
+    document.getElementById('picked').style.display='block';
+    const go=document.getElementById('goBtn');
+    go.href = PAYMENT_LINK + '?client_reference_id=' + encodeURIComponent(s);
+    go.classList.add('on');
+    go.onclick=()=>{ try{ localStorage.setItem('kirein_store',
+      JSON.stringify({ id:s, name:picked.name, addr:picked.formatted_address })); }catch(e){} };
+  };
+  const n=sp.get('n'), a=sp.get('a');
+  if(n){ setPicked(n,a); return; }
+  try{
+    const svc=new google.maps.places.PlacesService(document.createElement('div'));
+    svc.getDetails({ placeId:s, fields:['name','formatted_address'] }, (p,st)=>{
+      if(st===google.maps.places.PlacesServiceStatus.OK && p) setPicked(p.name,p.formatted_address);
+      else setPicked('','');
+    });
+  }catch(e){ setPicked('',''); }
 }
 window.initStart = initStart;
 </script>
