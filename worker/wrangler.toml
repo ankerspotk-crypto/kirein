@@ -12,8 +12,10 @@ routes = [
 STRIPE_PRICE_ID = "price_XXXXXXXXXXXX"
 # Ph2b 通知メールの差出人（Resendで認証したドメインのアドレス）
 ALERT_FROM = "キレイン <alert@kirein.net>"
-# 通知メール内のダッシュボードURL（?s=place_id が付与される）
+# 通知メール内のダッシュボードURL（?s=place_id&t=token が付与される）
 DASHBOARD_URL = "https://kirein.net/dashboard.html"
+# Firebase公開APIキー（claim時バックフィルでFirestore(posts・公開読取)を読む用。クライアントHTMLにも載る公開値＝秘密ではない）
+FIREBASE_API_KEY = "AIzaSyBmd6J3uyIEkyybGVLlMR5_p9LLiHZQk3U"
 
 # D1（手順③の `wrangler d1 create kirein` で出た database_id を入れる）
 [[d1_databases]]

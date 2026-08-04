@@ -62,6 +62,8 @@ async function webhook(request, env) {
         const st = await env.DB.prepare('SELECT id,name,email,token FROM stores WHERE id=?').bind(placeId).first();
         if (st) await notifyWelcome(st, env);
       } catch (e) { /* 送信失敗は監視に影響させない */ }
+      // 契約前にキレインアプリに溜まっていた過去のネガ投稿(Firestore)を一度だけD1へ取り込む
+      try { await backfillKireinPosts(placeId, env); } catch (e) { /* バックフィル失敗は無視 */ }
     }
   } else if (ev.type === 'customer.subscription.deleted') {
     await env.DB.prepare(`UPDATE stores SET status='canceled' WHERE stripe_sub=?`)
@@ -176,7 +178,7 @@ async function getStore(url, env) {
   let alerts = [];
   if (authed) {
     const r = await env.DB.prepare(
-      'SELECT quote,area,detected,source FROM alerts WHERE store_id=? ORDER BY id DESC LIMIT 10'
+      'SELECT quote,area,detected,source FROM alerts WHERE store_id=? ORDER BY id DESC LIMIT 60'
     ).bind(id).all();
     alerts = r.results || [];
   }
@@ -225,6 +227,35 @@ async function kireinPost(request, env) {
     .bind(store.id, q, area, now, 'kirein').run();
   try { await notifyStore(store, [{ area, quote: q, source: 'kirein' }], env); } catch (e) { /* 送信失敗は無視 */ }
   return json({ ok: true });
+}
+
+// ── claim時のバックフィル：既存のキレイン投稿(Firestore・公開読取)からネガをD1へ一度だけ取り込む ──
+// これで dashboard は Firestore を直読みせず D1(トークン施錠済)だけで過去の声を出せる＝将来 Firestore を施錠しても壊れない。
+async function backfillKireinPosts(placeId, env) {
+  const KEY = env.FIREBASE_API_KEY;
+  if (!KEY || !placeId) return;
+  const url = `https://firestore.googleapis.com/v1/projects/kirein-ac148/databases/(default)/documents:runQuery?key=${KEY}`;
+  const body = { structuredQuery: { from: [{ collectionId: 'posts' }],
+    where: { fieldFilter: { field: { fieldPath: 'place_id' }, op: 'EQUAL', value: { stringValue: placeId } } } } };
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) return;
+  const rows = await res.json();
+  const fv = (o) => o ? (o.stringValue ?? o.integerValue ?? o.doubleValue ?? o.timestampValue ?? '') : '';
+  for (const r of (Array.isArray(rows) ? rows : [])) {
+    const f = r.document && r.document.fields; if (!f) continue;
+    const rating = Number(fv(f.cleanliness_rating));
+    const negItems = ((f.negative_items && f.negative_items.arrayValue && f.negative_items.arrayValue.values) || [])
+      .map(v => fv(v)).filter(Boolean);
+    const isNeg = (!isNaN(rating) && rating <= 2) || negItems.length > 0;
+    if (!isNeg) continue;
+    const area = negItems[0] || '清潔全般';
+    const quote = (fv(f.negative_comment) || fv(f.comment) || (area + 'について気になる声が届きました')).toString().slice(0, 200);
+    const detected = (fv(f.created_at) || new Date().toISOString()).toString();
+    const dup = await env.DB.prepare('SELECT 1 FROM alerts WHERE store_id=? AND quote=? LIMIT 1').bind(placeId, quote).first();
+    if (dup) continue;
+    await env.DB.prepare('INSERT INTO alerts (store_id, quote, area, detected, source) VALUES (?,?,?,?,?)')
+      .bind(placeId, quote, area, detected, 'kirein').run();
+  }
 }
 
 // ── 見込み店 抽出（社内営業ツール）──
