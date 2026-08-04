@@ -83,7 +83,7 @@
 <body>
   <div class="topbar">
     <div class="brand">Kirein <small>キレイン</small></div>
-    <a class="back" href="./business.html">← 店舗オーナーの方へ</a>
+    <a class="back" href="/">← キレインTOPへ</a>
   </div>
 
   <div class="hero">
@@ -190,8 +190,8 @@ function renderDiag(place){
     el.innerHTML = `
       <div class="fallback">
         <h3>まだ口コミが少なく、自動診断ができません</h3>
-        <p>このお店はGoogleの口コミが少ないため、既存データからの診断ができませんでした。<br>先着30店舗限定で、無料の現地診断も受け付けています。</p>
-        <a class="btn btn-pine" href="./business.html#apply">無料の現地診断を申し込む</a>
+        <p>このお店はGoogleの口コミが少ないため、既存データからの診断ができませんでした。<br>今後の口コミは、月¥3,000の見張りプランで24時間自動監視できます。</p>
+        <a class="btn btn-pine" href="./start.html">¥3,000で見張りを始める →</a>
       </div>`;
     return;
   }
@@ -214,14 +214,14 @@ function renderDiag(place){
       <div class="locked-item">
         <span class="locked-pri pri-mid">・ ${esc(f.area)}</span>
         <span class="locked-text">${esc((f.text||'お客様が指摘した清潔面のポイント').slice(0,40))}…</span>
-      </div>`).join('') || `<div class="locked-item"><span class="locked-pri pri-mid">・ 現地でのみ分かる指摘</span><span class="locked-text">実際に来店しないと見えない清潔面の指摘がここに入ります</span></div>`;
+      </div>`).join('') || `<div class="locked-item"><span class="locked-pri pri-mid">・ これから書かれる口コミ</span><span class="locked-text">今後の清潔面の口コミを24時間見張り、悪い兆候をすぐ通知します</span></div>`;
 
   el.innerHTML = `
     <div class="diag">
       <div class="diag-head">
         <div class="diag-name">${esc(place.name)}</div>
         <div class="diag-meta">${esc(place.formatted_address||'')} ｜ Google評価 ★${(d.rating||'-')}（${d.total.toLocaleString()}件）</div>
-        <span class="pre-tag">🔎 現地確認前の簡易分析</span>
+        <span class="pre-tag">🔎 公開口コミの簡易分析</span>
       </div>
       ${quoteBlock}
       <div class="risk-row">
@@ -233,18 +233,18 @@ function renderDiag(place){
         <div class="stat"><div class="n">${d.negCount}</div><div class="l">清潔面で気になる声</div></div>
       </div>
       <div class="locked">
-        <h4>🔒 現地でしか分からない改善点は、精密診断で</h4>
+        <h4>🔒 この口コミを見張り、悪化する前に手を打つ</h4>
         ${lockedItems}
         <div class="paywall">
           <div class="price">この口コミを24時間見張り、対応まで — 見張りプラン <b>¥3,000</b>/月</div>
           <div style="font-size:11px;color:var(--muted);margin:6px 0 14px">口コミの自動監視＋悪い兆候アラート＋お客様の声への公開対応＋客に見せる店舗ページ。<b>現地訪問はありません。</b></div>
-          <a class="btn btn-mint btn-block" href="./business.html#price">見張りプランを見る →</a>
-          <a class="btn btn-block" style="background:transparent;color:var(--pine);margin-top:8px;text-decoration:underline;font-size:12px" href="./business.html">キレインについて</a>
+          <a class="btn btn-mint btn-block" href="./start.html">¥3,000で見張りを始める →</a>
+          <a class="btn btn-block" style="background:transparent;color:var(--pine);margin-top:8px;text-decoration:underline;font-size:12px" href="/">キレインについて</a>
         </div>
       </div>
     </div>
     <div class="footnote">
-      ※ 本チェックはGoogle等に公開されている口コミ${d.analyzed}件を第三者の目で自動解析した<b>現地確認前の簡易分析</b>です。点数は目安であり、清潔さを保証・認証するものではありません。<br>
+      ※ 本チェックはGoogle等に公開されている口コミ${d.analyzed}件を第三者の目で自動解析した<b>公開口コミにもとづく簡易分析</b>です。点数は目安であり、清潔さを保証・認証するものではありません。<br>
       引用元・投稿者はGoogleマップでご確認いただけます。月¥3,000の見張りプランで、この口コミを継続監視し、対応した姿勢を客に見せられます。
     </div>`;
 }
@@ -288,7 +288,7 @@ function runDiagnosis(placeId){
       renderDiag(place);
       el.scrollIntoView({ behavior:'smooth', block:'start' });
     } else {
-      el.innerHTML = '<div class="fallback"><h3>お店の情報を取得できませんでした</h3><p>別の店名でお試しいただくか、無料の現地診断をご利用ください。</p><a class="btn btn-pine" href="./business.html#apply">無料の現地診断を申し込む</a></div>';
+      el.innerHTML = '<div class="fallback"><h3>お店の情報を取得できませんでした</h3><p>別の店名でお試しください。</p><a class="btn btn-pine" href="/">キレインについて →</a></div>';
     }
   });
 }

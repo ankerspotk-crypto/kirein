@@ -4,23 +4,24 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>キレイン｜トイレは、嘘をつかない。</title>
-<meta name="description" content="トイレは、嘘をつかない。来店ユーザーのリアルなトイレ評価で、本当に清潔なお店だけが見つかる。名古屋全域対応。" />
+<meta name="description" content="トイレが汚かった、においが気になった——面と向かっては言えないその一言を、キレインなら匿名でお店に届けられる。晒しではなく、改善のリクエスト。全国どこのお店でも。" />
 <meta property="og:title" content="トイレが汚かった。ちゃんと言っていい。｜キレイン" />
 <meta property="og:description" content="匿名で投稿するだけ。あなたの声が、次の人を守る。お店には言いにくい一言を、キレインなら届けられる。" />
-<meta property="og:image" content="https://kirein.net/logo.png" />
+<meta property="og:image" content="https://kirein.net/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
 <meta property="og:url" content="https://kirein.net/toilet.html" />
 <meta property="og:type" content="website" />
 <link rel="canonical" href="https://kirein.net/toilet.html" />
-<meta name="twitter:card" content="summary" />
-<meta name="twitter:image" content="https://kireinip.github.io/kirein/logo.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://kirein.net/og.png" />
 <meta name="keywords" content="トイレ きれい 名古屋,清潔 飲食店 名古屋,トイレ評価,キレイン,名古屋 レストラン 清潔,トイレが綺麗な店,名古屋 カフェ トイレ" />
-<link rel="canonical" href="https://kireinip.github.io/kirein/" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   "name": "キレイン",
-  "url": "https://kireinip.github.io/kirein/",
+  "url": "https://kirein.net/toilet.html",
   "description": "名古屋の飲食店・カフェ・バーのトイレ清潔さを評価・検索できるサービス。来店ユーザーのリアルな投稿で、本当に清潔なお店が見つかる。",
   "applicationCategory": "LifestyleApplication",
   "operatingSystem": "Web",
@@ -490,7 +491,7 @@ function fallbackNicknameLogin(){
       </span>
     </a>
     <div class="head-cta">
-      <a class="owner" href="./business.html">店舗オーナーの方へ</a>
+      <a class="owner" href="/">店舗オーナーの方へ</a>
       <a id="searchBtn" class="btn sm ghost" href="#/" onclick="event.preventDefault();window.scrollTo({top:0,behavior:'smooth'});">探す</a>
       <button id="loginBtn" class="btn sm ghost" onclick="handleLoginClick()" style="font-family:inherit">🔑 ログイン</button>
       <a id="userLink" class="btn sm mint" href="#/mypage" style="display:none">マイページ</a>
@@ -504,13 +505,13 @@ function fallbackNicknameLogin(){
   <div class="hero-bg"></div>
   <div class="wrap">
     <h1>トイレは、<br><span class="ac">嘘をつかない。</span></h1>
-    <p class="lead">来店ユーザーのリアルなトイレ評価で、本当に清潔なお店だけが見つかる。名古屋全域対応。</p>
+    <p class="lead">その店のトイレ、汚かった。においが気になった。——でも、面と向かっては言えない。<br>キレインなら<b>匿名</b>で、"直してほしい"をお店に届けられる。晒しではなく、改善のリクエスト。<b>全国どこのお店でも。</b></p>
 
     <div class="searchbar">
       <div class="fieldset">
         <div class="ipt">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input id="q" type="text" placeholder="店名・キーワードで探す" />
+          <input id="q" type="text" placeholder="気になった店名を入力（全国どこでも）" />
         </div>
         <div class="ipt" style="flex:0 0 150px">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-12A7 7 0 0 0 5 9c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/></svg>
@@ -550,7 +551,7 @@ function fallbackNicknameLogin(){
           </select>
         </div>
       </div>
-      <button class="btn" onclick="render()">この条件で探す</button>
+      <button class="btn" onclick="render()">店を探す</button>
     </div>
 
     <!-- 現在地ボタン -->
@@ -561,6 +562,12 @@ function fallbackNicknameLogin(){
         onmouseout="this.style.background='rgba(255,255,255,.1)'">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 4"/></svg>
         📍 現在地から探す
+      </button>
+      <button onclick="(async()=>{const u='https://kirein.net/toilet.html';const t='トイレが汚かった。ちゃんと言っていい。気になったお店の清潔さを匿名で伝えられる #キレイン';try{if(navigator.share){await navigator.share({title:'キレイン',text:t,url:u});}else{await navigator.clipboard.writeText(t+' '+u);alert('共有リンクをコピーしました');}}catch(e){}})()"
+        style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;transition:.2s"
+        onmouseover="this.style.background='rgba(255,255,255,.2)'"
+        onmouseout="this.style.background='rgba(255,255,255,.1)'">
+        🔗 キレインを共有
       </button>
       <span id="gpsStatus" style="font-size:11px;color:#9ecfc8;align-self:center;display:none"></span>
     </div>
@@ -594,7 +601,7 @@ function fallbackNicknameLogin(){
   <!-- 使い方セクション -->
   <div style="padding:60px 0 40px">
     <h2 style="text-align:center;font-size:22px;color:var(--pine);margin-bottom:8px">キレインの使い方</h2>
-    <p style="text-align:center;color:var(--muted);font-size:14px;margin-bottom:40px">3ステップで、清潔なお店を見つける・投稿する</p>
+    <p style="text-align:center;color:var(--muted);font-size:14px;margin-bottom:40px">3ステップで、気になった清潔さを"改善リクエスト"としてお店に届ける</p>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
 
       <div style="text-align:center">
@@ -603,8 +610,8 @@ function fallbackNicknameLogin(){
           <img src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600&auto=format&fit=crop&q=85" alt="お店を探す" style="width:100%;height:100%;object-fit:cover">
           <div style="position:absolute;top:12px;left:12px;background:var(--mint);color:#fff;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:16px">1</div>
         </div>
-        <h3 style="font-size:15px;color:var(--pine);margin-bottom:6px">食べたいお店を探す</h3>
-        <p style="font-size:12px;color:var(--muted);line-height:1.7">エリアや業態で絞り込み。トイレの評価が高いお店だけを探せる。</p>
+        <h3 style="font-size:15px;color:var(--pine);margin-bottom:6px">気になった店を選ぶ</h3>
+        <p style="font-size:12px;color:var(--muted);line-height:1.7">いま行った店も、通りがかりの店も。全国どこのお店でも検索して選べます。</p>
       </div>
 
       <div style="text-align:center">
@@ -613,8 +620,8 @@ function fallbackNicknameLogin(){
           <img src="https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&auto=format&fit=crop&q=85" alt="トイレを評価" style="width:100%;height:100%;object-fit:cover">
           <div style="position:absolute;top:12px;left:12px;background:var(--mint);color:#fff;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:16px">2</div>
         </div>
-        <h3 style="font-size:15px;color:var(--pine);margin-bottom:6px">トイレの清潔さを投稿</h3>
-        <p style="font-size:12px;color:var(--muted);line-height:1.7">来店したらトイレの清潔さを投稿。ポイントをためてレポーターへ。</p>
+        <h3 style="font-size:15px;color:var(--pine);margin-bottom:6px">匿名で、気になった点を伝える</h3>
+        <p style="font-size:12px;color:var(--muted);line-height:1.7">トイレ・におい・客席の清潔さを匿名で投稿。生の中身は一般公開せず、お店への"改善リクエスト"になります。</p>
       </div>
 
       <div style="text-align:center">
@@ -623,8 +630,8 @@ function fallbackNicknameLogin(){
           <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&auto=format&fit=crop&q=85" alt="清潔な店で食事" style="width:100%;height:100%;object-fit:cover">
           <div style="position:absolute;top:12px;left:12px;background:var(--mint);color:#fff;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:16px">3</div>
         </div>
-        <h3 style="font-size:15px;color:var(--pine);margin-bottom:6px">安心してお食事できる</h3>
-        <p style="font-size:12px;color:var(--muted);line-height:1.7">みんなの評価が積み重なって、本当に清潔なお店が見つかる。</p>
+        <h3 style="font-size:15px;color:var(--pine);margin-bottom:6px">声が積み重なり、改善につながる</h3>
+        <p style="font-size:12px;color:var(--muted);line-height:1.7">同じ声が集まれば、お店も動く。対応した店は「対応中／対応済み」として見える化。次に来る人が救われます。</p>
       </div>
 
     </div>
@@ -686,7 +693,7 @@ function fallbackNicknameLogin(){
       <span class="jp" style="color:#fff">キレイン</span>
     </a>
     <div style="display:flex;gap:24px;font-size:13px">
-      <a href="./business.html">店舗オーナーの方へ</a>
+      <a href="/">店舗オーナーの方へ</a>
     </div>
     <div class="copy">© 2026 Kirein（キレイン） — トイレがきれいな店が、見つかる。</div>
   </div>
