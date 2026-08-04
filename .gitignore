@@ -1,2 +1,7 @@
 assets/.DS_Store
 .DS_Store
+
+# サービスアカウント鍵（絶対にコミットしない）
+*serviceAccount*.json
+*-sa.json
+kirein-*.json
