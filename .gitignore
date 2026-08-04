@@ -10,3 +10,4 @@ kirein-*.json
 worker/wrangler.local.toml
 worker/.wrangler/
 worker/node_modules/
+tools/node_modules/
