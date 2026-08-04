@@ -10,15 +10,18 @@
 // ⚠️ 既定は DRY-RUN（何も書かない・対象を一覧するだけ）。実行は末尾に --apply を付ける。
 // ⚠️ サービスアカウント鍵は秘密。リポにコミットしない（.gitignore 済）。
 //
-// 使い方：
-//   1) Firebaseコンソール(kirein-ac148)→プロジェクトの設定→サービスアカウント
-//      →「新しい秘密鍵を生成」で JSON を落とす（例: ~/kirein-sa.json）
-//   2) cd /Users/apple/cloud/kirein/tools && npm i firebase-admin
-//   3) 下見（安全・書き込みなし）:
-//        GOOGLE_APPLICATION_CREDENTIALS=~/kirein-sa.json node purge_posts_neg.mjs
-//      または  node purge_posts_neg.mjs --key ~/kirein-sa.json
-//   4) 実行（本番を書き換え）:
-//        GOOGLE_APPLICATION_CREDENTIALS=~/kirein-sa.json node purge_posts_neg.mjs --apply
+// 使い方（認証は2択・どちらでも可）：
+//   ● 方式A：サービスアカウント鍵（確実）
+//     1) Firebaseコンソール(kirein-ac148)→プロジェクトの設定→サービスアカウント
+//        →「新しい秘密鍵を生成」で JSON を落とす（落ちた実ファイルの“実際のパス”を使う）
+//     2) cd /Users/apple/cloud/kirein/tools && npm i firebase-admin
+//     3) 下見:  node purge_posts_neg.mjs --key ~/Downloads/kirein-ac148-firebase-adminsdk-XXXX.json
+//     4) 実行:  node purge_posts_neg.mjs --key <同じパス> --apply
+//   ● 方式B：鍵ファイル無し（gcloud ADC・ブラウザで自分のGoogleでログイン）
+//     1) gcloud auth application-default login
+//     2) 下見:  node purge_posts_neg.mjs
+//     3) 実行:  node purge_posts_neg.mjs --apply
+//   ※ 既定は DRY-RUN（下見）。実際に書き換えるのは末尾 --apply を付けた時だけ。
 
 import admin from 'firebase-admin';
 import { readFileSync } from 'node:fs';
@@ -34,23 +37,30 @@ function keyPath() {
   return null;
 }
 
+const TARGET_PROJECT = 'kirein-ac148';
+
 async function main() {
   const kp = keyPath();
-  if (!kp) {
-    console.error('✗ サービスアカウント鍵が要ります。--key <path> か GOOGLE_APPLICATION_CREDENTIALS を指定してください。');
-    process.exit(1);
+  let projectId;
+  if (kp) {
+    // 方式A：サービスアカウント鍵
+    const sa = JSON.parse(readFileSync(kp, 'utf8'));
+    if (sa.project_id !== TARGET_PROJECT) {
+      console.error(`✗ 鍵の project_id が ${TARGET_PROJECT} ではありません（${sa.project_id}）。誤爆防止のため中止。`);
+      process.exit(1);
+    }
+    admin.initializeApp({ credential: admin.credential.cert(sa) });
+    projectId = sa.project_id;
+  } else {
+    // 方式B：ADC（gcloud auth application-default login 済み想定・鍵ファイル不要）
+    admin.initializeApp({ credential: admin.credential.applicationDefault(), projectId: TARGET_PROJECT });
+    projectId = TARGET_PROJECT;
   }
-  const sa = JSON.parse(readFileSync(kp, 'utf8'));
-  admin.initializeApp({ credential: admin.credential.cert(sa) });
   const db = admin.firestore();
   const FieldValue = admin.firestore.FieldValue;
 
   console.log(`モード: ${APPLY ? '⚠️  APPLY（本番を書き換えます）' : 'DRY-RUN（下見のみ・書き込みなし）'}`);
-  console.log(`対象プロジェクト: ${sa.project_id}\n`);
-  if (sa.project_id !== 'kirein-ac148') {
-    console.error(`✗ project_id が kirein-ac148 ではありません（${sa.project_id}）。誤爆防止のため中止。`);
-    process.exit(1);
-  }
+  console.log(`認証: ${kp ? 'サービスアカウント鍵' : 'ADC（gcloud）'} / 対象プロジェクト: ${projectId}\n`);
 
   const snap = await db.collection('posts').get();
   let scanned = 0, affected = 0, migrated = 0, stripped = 0;
