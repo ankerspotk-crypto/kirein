@@ -8,6 +8,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet" />
+<!-- Firebase（キレインのユーザー投稿＝過去分を店に見せるため／読み取りのみ） -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+  try{
+    firebase.initializeApp({
+      apiKey: "AIzaSyBmd6J3uyIEkyybGVLlMR5_p9LLiHZQk3U",
+      authDomain: "kirein-ac148.firebaseapp.com",
+      projectId: "kirein-ac148",
+      storageBucket: "kirein-ac148.firebasestorage.app",
+      messagingSenderId: "512365581418",
+      appId: "1:512365581418:web:9686273005ff1b4dbf6613"
+    });
+    window.db = firebase.firestore();
+  }catch(e){ /* Firebase未ロードでもD1側は動く */ }
+</script>
 <style>
 :root{
   --pine:#0e3a33;--pine-deep:#082722;--mint:#25b598;--mint-soft:#e6f5f1;
@@ -145,13 +161,15 @@ function renderActive(st){
   if(r&&RESP[r.status]) RESP_STATE=r.status;
 
   const srcMeta={kirein:{l:'キレインのユーザー',c:'#159079',bg:'#e6f5f1'},google:{l:'Googleの口コミ',c:'#c78a00',bg:'#fdf6e6'}};
-  const alertHtml = alerts.length
-    ? alerts.map(a=>{const sm=srcMeta[a.source]||srcMeta.google;
+  // Google（D1）とキレインのユーザー（Firestore・過去分含む）を分けて表示。D1のkirein分はFirestore側に集約するため除外。
+  const gAlerts = alerts.filter(a=>(a.source||'google')!=='kirein');
+  const gAlertHtml = gAlerts.length
+    ? gAlerts.map(a=>{const sm=srcMeta[a.source]||srcMeta.google;
       return `<div class="alert">
         <div class="top"><span class="area">${esc(a.area||'清潔全般')}</span><span class="src" style="color:${sm.c};background:${sm.bg}">${sm.l}</span><span class="date">${fmtDate(a.detected)}</span></div>
         <div class="q">${esc(a.quote||'')}</div>
       </div>`;}).join('')
-    : `<div class="good"><div class="ico">🌿</div><div class="t">いま、清潔に関する目立ったネガティブ口コミはありません。</div><div class="s">Googleの新着口コミを自動でチェックし続けています。</div></div>`;
+    : `<div class="good" style="padding:4px 0"><div class="s" style="font-size:12px;color:var(--muted)">Googleの公開口コミに、清潔面の目立ったネガはありません。</div></div>`;
 
   const segBtn=(k,label)=>`<button data-st="${k}" class="${RESP_STATE===k?'on':''}" onclick="pickResp('${k}')">${label}</button>`;
   const curResp = r ? `<div class="curresp">
@@ -175,10 +193,13 @@ function renderActive(st){
     </div>
 
     <div class="card">
-      <div class="card-h"><h2>① 気づく — 清潔アラート</h2><span class="sub">${alerts.length?alerts.length+'件':'良好'}</span></div>
+      <div class="card-h"><h2>① 気づく — 清潔の声</h2><span class="sub">店舗だけが見る画面</span></div>
       <div class="card-b">
-        ${alertHtml}
-        <div class="hint">Googleの公開口コミの中から、清潔に関するネガティブな声だけを自動で拾っています。<b>この内容は店舗だけが見る画面です。</b>お客様が見るページには口コミの中身・投稿者は一切公開されません。</div>
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">Googleの公開口コミ</div>
+        ${gAlertHtml}
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin:18px 0 10px">キレインのユーザーの声（これまでの投稿）</div>
+        <div id="kireinVoices"><div class="good" style="padding:4px 0"><div class="s" style="font-size:12px;color:var(--muted)">読み込み中…</div></div></div>
+        <div class="hint">清潔に関するネガティブな声だけを拾っています。<b>この内容は店舗だけが見る画面です。</b>お客様が見るページには口コミの中身・投稿者は一切公開されません。</div>
       </div>
     </div>
 
@@ -214,6 +235,39 @@ function renderActive(st){
         <div class="hint">このリンク／QRを店頭やSNSに置くと、お客様に「清潔の声に向き合っている店」であることが伝わります。</div>
       </div>
     </div>`;
+
+  loadKireinVoices(st.id);
+}
+
+/* ── キレインのユーザーの声（Firestore・過去分含む／active の店だけ描画）── */
+async function loadKireinVoices(placeId){
+  const box=document.getElementById('kireinVoices'); if(!box || !placeId) return;
+  let t=0; while(!window.db && t<15){ await new Promise(r=>setTimeout(r,200)); t++; }
+  if(!window.db){ box.innerHTML='<div class="s" style="font-size:12px;color:var(--muted)">読み込みに失敗しました。時間をおいて再度お試しください。</div>'; return; }
+  // created_at は Firestore Timestamp と ISO文字列が混在する → ミリ秒に正規化
+  const toMs=(v)=>{
+    if(!v) return 0;
+    if(typeof v==='object'){
+      if(typeof v.toMillis==='function') return v.toMillis();
+      if(typeof v.toDate==='function') return v.toDate().getTime();
+      if(typeof v.seconds==='number') return v.seconds*1000;
+    }
+    const d=new Date(v); return isNaN(d)?0:d.getTime();
+  };
+  try{
+    const snap=await window.db.collection('posts').where('place_id','==',String(placeId)).get();
+    const negs=snap.docs.map(d=>d.data())
+      .filter(p=>(Number(p.cleanliness_rating)<=2)||(Array.isArray(p.negative_items)&&p.negative_items.length>0))
+      .map(p=>({...p, _ms:toMs(p.created_at)}))
+      .sort((a,b)=>b._ms-a._ms);
+    if(!negs.length){ box.innerHTML='<div class="good" style="padding:4px 0"><div class="s" style="font-size:12px;color:var(--muted)">キレインのユーザーからの清潔ネガの声は、まだありません。</div></div>'; return; }
+    box.innerHTML=negs.slice(0,50).map(p=>{
+      const area=(Array.isArray(p.negative_items)&&p.negative_items[0])||'清潔全般';
+      const quote=p.negative_comment||p.comment||'（コメントなし）';
+      const dateStr=p._ms?new Date(p._ms).toISOString():'';
+      return `<div class="alert"><div class="top"><span class="area">${esc(area)}</span><span class="src" style="color:#159079;background:#e6f5f1">キレインのユーザー</span><span class="date">${fmtDate(dateStr)}</span></div><div class="q">${esc(quote)}</div></div>`;
+    }).join('');
+  }catch(e){ box.innerHTML='<div class="s" style="font-size:12px;color:var(--muted)">読み込みに失敗しました（'+(e.code||'error')+'）。</div>'; }
 }
 
 window.pickResp=function(k){
