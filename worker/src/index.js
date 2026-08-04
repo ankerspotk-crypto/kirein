@@ -22,6 +22,7 @@ export default {
     if (url.pathname === '/api/respond'     && request.method === 'POST') return respond(request, env);
     if (url.pathname === '/api/kirein-post' && request.method === 'POST') return kireinPost(request, env);
     if (url.pathname === '/api/prospect'    && request.method === 'GET')  return prospect(url, env);
+    if (url.pathname === '/api/place-photo' && request.method === 'GET')  return placePhoto(request, url, env);
     return json({ error: 'not found' }, 404);
   },
   // 定時：稼働中の各店の口コミを監視→新規ネガをアラート化→店にメール通知
@@ -70,6 +71,52 @@ async function webhook(request, env) {
       .bind(ev.data.object.id).run();
   }
   return json({ received: true });
+}
+
+// ── 店の写真プロキシ：クライアントにPlacesキーを一切露出させず、Worker(秘密キー GOOGLE_PLACES_KEY)経由で画像を返す ──
+//   ・ref（保存済み photo_reference）優先。無ければ place_id から Details で取得（参照のプロジェクト依存を回避）。
+//   ・将来 Places API(新) へ移す時は本関数の中だけ差し替えればよく、アプリ(toilet.html)は無改修。
+//   ・濫用抑制：kirein.net 以外の明示リファラーは拒否＋1日キャッシュで呼び出し削減。
+async function placePhoto(request, url, env) {
+  if (!env.GOOGLE_PLACES_KEY) return new Response('', { status: 503, headers: CORS });
+
+  const ref0 = request.headers.get('referer') || '';
+  if (ref0 && !/^https?:\/\/([a-z0-9-]+\.)?kirein\.net(\/|$)/i.test(ref0)) {
+    return new Response('', { status: 403, headers: CORS });   // 他サイトからの無断ホットリンク拒否
+  }
+
+  let w = parseInt(url.searchParams.get('w') || '400', 10);
+  if (!Number.isFinite(w) || w < 40) w = 400;
+  if (w > 800) w = 800;
+
+  let photoRef = url.searchParams.get('ref') || '';
+  const placeId = url.searchParams.get('place_id') || '';
+
+  if (!photoRef && placeId) {
+    try {
+      const d = await (await fetch(
+        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=photos&language=ja&key=${env.GOOGLE_PLACES_KEY}`
+      )).json();
+      photoRef = (d.result && d.result.photos && d.result.photos[0] && d.result.photos[0].photo_reference) || '';
+    } catch (e) { /* 取れなければ写真なし */ }
+  }
+  if (!photoRef || photoRef.length > 2000) return new Response('', { status: 404, headers: CORS });
+
+  let resp;
+  try {
+    resp = await fetch(
+      `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${w}&photoreference=${encodeURIComponent(photoRef)}&key=${env.GOOGLE_PLACES_KEY}`,
+      { redirect: 'follow' }
+    );
+  } catch (e) { return new Response('', { status: 502, headers: CORS }); }
+
+  const ct = resp.headers.get('content-type') || '';
+  if (!resp.ok || !ct.startsWith('image/')) return new Response('', { status: 404, headers: CORS });
+
+  const headers = new Headers(CORS);
+  headers.set('Content-Type', ct);
+  headers.set('Cache-Control', 'public, max-age=86400');   // 1日キャッシュ
+  return new Response(resp.body, { status: 200, headers });
 }
 
 // ── 口コミ監視（Places Details 旧API→清潔ネガ検知→新規だけアラート）──

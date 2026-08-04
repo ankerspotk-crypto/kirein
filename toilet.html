@@ -65,7 +65,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@600;700&family=Cormorant+Garamond:wght@600&display=swap" rel="stylesheet" />
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDRfloVijkhdUhF9v_DG7O3JV17Fqd9V7w&libraries=places"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCHmmsVD9DpPrgYMwJfMPWu5Umc30E4mOU&libraries=places"></script>
 
 <!-- LIFF SDK -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -3305,7 +3305,7 @@ function render(){
     const photoUrl = s.photo
       ? (s.photo.startsWith('http')
           ? s.photo
-          : `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photoreference=${s.photo}&key=AIzaSyDRfloVijkhdUhF9v_DG7O3JV17Fqd9V7w`)
+          : `https://kirein.net/api/place-photo?w=200&ref=${encodeURIComponent(s.photo)}`)   // Worker経由=キー非露出
       : null;
 
     return `
@@ -3431,7 +3431,7 @@ function openModal(id){
     <div class="mbody">
       ${s.photo ? `
         <div style="width:100%;height:180px;border-radius:12px;overflow:hidden;margin-bottom:14px;background:#0d3d6b">
-          <img src="${s.photo.startsWith('http') ? s.photo : `https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=${s.photo}&key=AIzaSyDRfloVijkhdUhF9v_DG7O3JV17Fqd9V7w`}"
+          <img src="${s.photo.startsWith('http') ? s.photo : `https://kirein.net/api/place-photo?w=600&ref=${encodeURIComponent(s.photo)}`}"
             alt="${esc(s.name)}" style="width:100%;height:100%;object-fit:cover">
         </div>` : ''}
       ${(()=>{
