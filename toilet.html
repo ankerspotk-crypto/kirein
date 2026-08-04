@@ -118,7 +118,7 @@
           userLink.style.display = 'flex';
           userLink.innerHTML = `<span class="user-badge">
             ${firebaseUser.photoURL ? `<img src="${firebaseUser.photoURL}" style="width:20px;height:20px;border-radius:50%">` : ''}
-            ${user.nickname} <span class="lv lv${user.current_lv}">Lv.${user.current_lv}</span>
+            ${esc(user.nickname)} <span class="lv lv${user.current_lv}">Lv.${user.current_lv}</span>
           </span>`;
         }
         console.log('✅ Googleログイン:', firebaseUser.displayName);
@@ -196,7 +196,7 @@
 function handleLoginClick(){
   const user = getUserData();
   if(user){
-    if(confirm(`${user.nickname} さん、ログアウトしますか？`)){
+    if(confirm(`${esc(user.nickname)} さん、ログアウトしますか？`)){
       if(window.auth) window.auth.signOut();
       localStorage.removeItem('kirein_user');
       location.reload();
@@ -802,6 +802,11 @@ function showLvUpNotification(lv){
   setTimeout(()=>alert(msg), 300);
 }
 
+// XSS対策：ユーザー入力・共有データ(他ユーザーのpost等)をHTMLに描画する前に必ず通す
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// 画像URLはhttp(s)のみ許可し、属性/JS文字列を割る文字を除去（javascript:等・クォート脱出を弾く）
+function safeImgUrl(u){ u=String(u==null?'':u); return /^https?:\/\//i.test(u) ? u.replace(/["'<>\\\s]/g,'') : ''; }
+
 function getPosts(){
   // LocalStorage から取得（同期・即時）
   return JSON.parse(localStorage.getItem('kirein_posts')) || [];
@@ -1062,7 +1067,7 @@ function renderUnreviewedStores(){
   container.innerHTML = picks.slice(0,5).map(s => `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:8px">
       <div style="flex:1;min-width:0;margin-right:10px">
-        <div style="font-weight:700;color:var(--pine);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name}</div>
+        <div style="font-weight:700;color:var(--pine);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.area} ・ まだ誰も評価していません</div>
       </div>
       <button onclick="proceedToPostForm('${s.id}')" class="btn sm mint" style="white-space:nowrap;padding:8px 14px;font-size:12px;flex-shrink:0">10秒評価</button>
@@ -1173,7 +1178,7 @@ function updateUIForLogin(){
       const lineTag = user.loginType === 'line'
         ? `<span style="background:#06C755;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-right:3px">LINE</span>`
         : '';
-      userLink.innerHTML = `<span class="user-badge">${avatarHtml}${lineTag}${user.nickname} <span class="lv lv${user.current_lv||0}">Lv.${user.current_lv||0}</span></span>`;
+      userLink.innerHTML = `<span class="user-badge">${avatarHtml}${lineTag}${esc(user.nickname)} <span class="lv lv${user.current_lv||0}">Lv.${user.current_lv||0}</span></span>`;
     }
   }
 }
@@ -1300,7 +1305,7 @@ function initGooglePlacesAutocomplete(){
         const resultsDiv = document.getElementById('autocompleteResults');
         resultsDiv.innerHTML = localResults.map(s => {
           const distLabel = s.dist != null ? `<span style="color:var(--mint);font-weight:700">${s.dist.toFixed(1)}km</span>` : '';
-          return `<div style="padding:10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:12px;transition:.2s;background:#f9f9f9;display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='var(--mint-soft)'" onmouseout="this.style.background='#f9f9f9'" onclick="selectStoreForPost('${s.id}')"><div>${s.name}<br><span style="color:var(--muted);font-size:11px">${s.address || s.area}</span></div>${distLabel}</div>`;
+          return `<div style="padding:10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:12px;transition:.2s;background:#f9f9f9;display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='var(--mint-soft)'" onmouseout="this.style.background='#f9f9f9'" onclick="selectStoreForPost('${s.id}')"><div>${esc(s.name)}<br><span style="color:var(--muted);font-size:11px">${esc(s.address || s.area)}</span></div>${distLabel}</div>`;
         }).join('');
         resultsDiv.style.display = 'block';
         return;
@@ -1421,7 +1426,7 @@ function filterStores(){
 
   const listContainer = document.getElementById('storeListContainer');
   listContainer.innerHTML = filtered.length ?
-    filtered.map(s => `<div class="card store-item" style="margin-bottom:10px;cursor:pointer" onclick="proceedToPostForm('${s.id}')">${s.name} (${s.area})</div>`).join('')
+    filtered.map(s => `<div class="card store-item" style="margin-bottom:10px;cursor:pointer" onclick="proceedToPostForm('${s.id}')">${esc(s.name)} (${s.area})</div>`).join('')
     : '<div style="text-align:center;color:var(--muted);padding:20px">該当する店舗がありません</div>';
 }
 
@@ -1445,7 +1450,7 @@ function useGPS(){
       const listContainer = document.getElementById('storeListContainer');
       listContainer.innerHTML = storesWithDistance.map(s =>
         `<div class="card store-item" style="margin-bottom:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="proceedToPostForm('${s.id}')">
-          <div>${s.name} (${s.area})</div>
+          <div>${esc(s.name)} (${s.area})</div>
           <div style="font-size:11px;color:var(--muted)">${s.distance.toFixed(1)}km</div>
         </div>`
       ).join('');
@@ -1554,7 +1559,7 @@ function proceedToPostForm(shopId){
     document.getElementById('modal').innerHTML = `
       <div class="mhead">
         <button class="close" onclick="closeModal()">×</button>
-        <h3>${shop.name}</h3>
+        <h3>${esc(shop.name)}</h3>
         <div class="mmeta">${shop.area}・${shop.cat}</div>
       </div>
       <div class="mbody" style="text-align:center;padding:30px">
@@ -1610,7 +1615,7 @@ function proceedToPostForm(shopId){
   document.getElementById('modal').innerHTML = `
     <div class="mhead">
       <button class="close" onclick="closeModal()">×</button>
-      <h3>${shop.name}</h3>
+      <h3>${esc(shop.name)}</h3>
       <div class="mmeta">${shop.area}・${shop.cat} &nbsp;${isReturn ? '🔄 再来店' : '🆕 初回'}</div>
     </div>
     <div class="mbody">
@@ -1978,7 +1983,7 @@ function showMyPage(){
   const content = `
     <section style="background:var(--bg-soft);padding:20px 0;border-bottom:1px solid var(--line)">
       <div class="wrap">
-        <h1 style="font-size:24px;margin-bottom:10px">こんにちは、<b>${user.nickname}</b>さん</h1>
+        <h1 style="font-size:24px;margin-bottom:10px">こんにちは、<b>${esc(user.nickname)}</b>さん</h1>
         <div style="font-size:14px;color:var(--muted)">Lv.${user.current_lv} ${['ビジター','認定レポーター','見習い調査員','公認調査員'][user.current_lv]}</div>
       </div>
     </section>
@@ -2048,11 +2053,11 @@ function showMyPage(){
           const date = new Date(p.created_at);
           return `<div class="post-item">
             <div class="st">
-              <span class="shop">${shop?.name || 'Unknown'}</span>
+              <span class="shop">${esc(shop?.name || 'Unknown')}</span>
               <span class="pts">+${p.points_earned}pt</span>
             </div>
             <div class="dat">${date.toLocaleDateString('ja-JP')} ${date.toLocaleTimeString('ja-JP')}</div>
-            ${p.comment ? `<div style="margin-top:8px;font-size:13px;color:#333">"${p.comment}"</div>` : ''}
+            ${p.comment ? `<div style="margin-top:8px;font-size:13px;color:#333">"${esc(p.comment)}"</div>` : ''}
           </div>`;
         }).join('') : '<div style="text-align:center;color:var(--muted);padding:40px 0">まだ投稿がありません</div>'}
       </div>
@@ -2480,8 +2485,8 @@ function renderNearbyList(stores, container){
            onmouseout="this.style.background='#fff';this.style.borderColor='var(--line)'"
            onclick="selectStoreForPost('${s.id}')">
         <div style="min-width:0;flex:1">
-          <div style="font-weight:700;color:var(--ink);font-size:14px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">${s.name}${newBadge}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.address || s.area || ''}</div>
+          <div style="font-weight:700;color:var(--ink);font-size:14px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">${esc(s.name)}${newBadge}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(s.address || s.area || '')}</div>
         </div>
         <div style="font-size:14px;font-weight:700;color:${distColor};flex-shrink:0;margin-left:12px">${distLabel}</div>
       </div>`;
@@ -2531,8 +2536,8 @@ async function useGPSForPost(){
   listContainer.innerHTML = storesWithDistance.map(s =>
     `<div style="padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:#fff;transition:.2s" onmouseover="this.style.background='var(--mint-soft)'" onmouseout="this.style.background='#fff'" onclick="selectStoreForPost('${s.id}')">
       <div>
-        <div style="font-weight:700;color:var(--ink);font-size:13px">${s.name}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.address || s.area}</div>
+        <div style="font-weight:700;color:var(--ink);font-size:13px">${esc(s.name)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(s.address || s.area)}</div>
       </div>
       <div style="font-size:13px;color:var(--mint);font-weight:700;flex-shrink:0;margin-left:8px">${s.distance < 1 ? (s.distance*1000).toFixed(0)+'m' : s.distance.toFixed(1)+'km'}</div>
     </div>`
@@ -3315,7 +3320,7 @@ function render(){
       <div class="body">
         <div class="top">
           <div>
-            <div class="name">${s.name}</div>
+            <div class="name">${esc(s.name)}</div>
             <div class="meta">${s.area}・${s.cat}${s._dist != null ? ` <span style="color:var(--mint);font-weight:700">📍 ${s._dist < 1 ? (s._dist*1000).toFixed(0)+'m' : s._dist.toFixed(1)+'km'}</span>` : ''}</div>
           </div>
           ${checkVirginStore(s.id)
@@ -3420,14 +3425,14 @@ function openModal(id){
         const desc = mr==='bronze' && hasVotes ? '評価あり（集計中）' : RANKDESC[mr];
         return `<span class="mcert cert ${mr}">✦ キレイン認証 ${RANKLBL[mr]||'評価中'}｜${desc}</span>`;
       })()}
-      <h3>${s.name}</h3>
+      <h3>${esc(s.name)}</h3>
       <div class="mmeta">${s.area}・${s.cat}　|　👍 ${(s._cleanVotes||0)+(s.kirei||0)} 人が「きれい！」${(()=>{const sc=calcScore(s.id);return sc?.repeatCount>0?`　<span style="background:#fff3e0;color:#e65100;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px">🔄 トイレリピート ${sc.repeatCount}人</span>`:'';})()}</div>
     </div>
     <div class="mbody">
       ${s.photo ? `
         <div style="width:100%;height:180px;border-radius:12px;overflow:hidden;margin-bottom:14px;background:#0d3d6b">
           <img src="${s.photo.startsWith('http') ? s.photo : `https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=${s.photo}&key=AIzaSyDRfloVijkhdUhF9v_DG7O3JV17Fqd9V7w`}"
-            alt="${s.name}" style="width:100%;height:100%;object-fit:cover">
+            alt="${esc(s.name)}" style="width:100%;height:100%;object-fit:cover">
         </div>` : ''}
       ${(()=>{
         const sc = calcScore(s.id);
@@ -3518,9 +3523,9 @@ async function loadFirestoreScores(shopId){
       photoEl.innerHTML = photos.length ? `
         <div class="msec-t">📷 トイレの写真</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-          ${photos.map(p=>`<img src="${p.photo_url}" alt="トイレ写真"
+          ${photos.map(p=>{const u=safeImgUrl(p.photo_url);return u?`<img src="${u}" alt="トイレ写真"
             style="width:calc(33% - 6px);aspect-ratio:1;object-fit:cover;border-radius:10px;cursor:pointer"
-            onclick="window.open('${p.photo_url}','_blank')">`).join('')}
+            onclick="window.open('${u}','_blank')">`:'';}).join('')}
         </div>` : '';
     }
 
@@ -3538,7 +3543,7 @@ async function loadFirestoreScores(shopId){
               <span>${p.created_at ? new Date(p.created_at).toLocaleDateString('ja-JP') : ''}</span>
             </div>
             <div class="rs">${star(Math.round((p.cleanliness_rating||0)))}</div>
-            <p>${p.comment}</p>
+            <p>${esc(p.comment)}</p>
           </div>`).join('');
         // 既存（静的）レビューの前に挿入
         reviewEl.insertAdjacentHTML('afterbegin', kireinHtml);
@@ -3647,7 +3652,7 @@ function evaluateStore(storeId){
         document.getElementById('modal').innerHTML = `
           <div class="mhead">
             <button class="close" onclick="closeModal()">×</button>
-            <h3>${shop.name}</h3>
+            <h3>${esc(shop.name)}</h3>
             <div class="mmeta">${shop.area}・${shop.cat}</div>
           </div>
           <div class="mbody" style="text-align:center;padding:30px">
