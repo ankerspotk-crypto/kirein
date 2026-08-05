@@ -3221,6 +3221,16 @@ async function _autoGPS(){
     });
   }
 
+  // 【全国対応】現在地が名古屋キャッシュ圏外なら、その地域をライブPlaces検索に切替
+  //   （近くにキャッシュ店が無い＝名古屋圏外。既存の searchWithExpandingRadius を再利用）
+  const _geo = STORES.filter(s => s.lat && s.lng);
+  if(_geo.length){
+    const _nearestKm = Math.min(..._geo.map(s => calculateDistance(loc.lat, loc.lng, s.lat, s.lng)));
+    if(_nearestKm > 25){
+      const _c = document.getElementById('storeListContainer');
+      if(_c){ searchWithExpandingRadius(loc, [300, 1000, 3000], _c); return; }
+    }
+  }
   // stores が既にロード済みなら即 render、未ロードなら loadRestaurantsFromAPI の render() が GPS モードで動く
   if(STORES.length > 0) render();
 }
