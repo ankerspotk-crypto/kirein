@@ -3419,6 +3419,11 @@ async function runHeroSearch(q){
       ...s,
       _d: (s.lat && s.lng) ? calculateDistance(loc.lat, loc.lng, s.lat, s.lng) : null
     })).sort((a,b) => (a._d ?? 9e9) - (b._d ?? 9e9));
+    // ⚠️ 既知店は今のところ名古屋に偏っている。距離を見ずに先頭へ出すと、
+    //    沖縄のユーザーが「ホテル」と打った時に1300km先の名古屋の店が上に並び、
+    //    すぐ近くの候補がその下に埋もれる（本番で実際に起きた）。遠い既知店は出さない。
+    const NEAR_KM = 50;
+    local = local.filter(s => s._d == null || s._d <= NEAR_KM);
   }
   local = local.slice(0, 5);
 
