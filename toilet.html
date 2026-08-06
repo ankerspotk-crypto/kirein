@@ -679,8 +679,12 @@ function fallbackNicknameLogin(){
       <span class="mark" style="color:#fff"><svg class="pin" viewBox="0 0 24 24" fill="none"><path d="M12 22s7-6.2 7-12A7 7 0 0 0 5 10c0 5.8 7 12 7 12Z" fill="#25b598"/><circle cx="12" cy="10" r="2.6" fill="#fff"/></svg>Kirein</span>
       <span class="jp" style="color:#fff">キレイン</span>
     </a>
-    <div style="display:flex;gap:24px;font-size:13px">
+    <div style="display:flex;gap:18px;font-size:13px;flex-wrap:wrap;justify-content:center">
       <a href="/">店舗オーナーの方へ</a>
+      <a href="/terms.html">利用規約</a>
+      <a href="/privacy.html">プライバシーポリシー</a>
+      <a href="/tokushoho.html">特定商取引法に基づく表記</a>
+      <a href="mailto:kirein.jp@gmail.com?subject=%E3%82%AD%E3%83%AC%E3%82%A4%E3%83%B3%E3%81%B8%E3%81%AE%E3%81%8A%E5%95%8F%E5%90%88%E3%81%9B">お問い合わせ・削除のご依頼</a>
     </div>
     <div class="copy">© 2026 Kirein（キレイン） — トイレがきれいな店が、見つかる。</div>
   </div>
@@ -3799,6 +3803,12 @@ function openModal(id){
       <div class="msec-t">このお店を評価する</div>
       <button class="btn mint" style="width:100%;font-size:15px;padding:14px" onclick="evaluateStore(${s.id})">🚻 このお店のトイレを評価する → ポイント獲得</button>
       <div class="note" style="margin-top:12px">💡 評価するとポイント獲得！ポイントに応じた特典・サービスは近日公開予定。</div>
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line);text-align:center">
+        <a href="mailto:kirein.jp@gmail.com?subject=${encodeURIComponent('【報告】'+s.name)}&body=${encodeURIComponent('店舗名: '+s.name+'\n\n報告の内容（事実と異なる／不適切な内容がある など）:\n\n※お店の方の場合はお立場もお知らせください。折り返しご連絡いたします。')}"
+           style="font-size:11.5px;color:var(--muted);text-decoration:underline">
+          この店舗の情報について報告する（お店の方・削除のご依頼）
+        </a>
+      </div>
     </div>`;
   document.getElementById('overlay').classList.add('open');
 

@@ -168,9 +168,17 @@ async function webhook(request, env) {
 async function placePhoto(request, url, env) {
   if (!env.GOOGLE_PLACES_KEY) return new Response('', { status: 503, headers: CORS });
 
+  // ⚠️ ホットリンク防止。以前は「Refererが有る時だけ」判定していたため、
+  //    Refererを送らなければ素通りし、誰でもループでPlaces課金を焼けた。
+  //    Referer必須にすると Referrer-Policy 次第で正規ユーザーの画像が消えるので、
+  //    ブラウザだけが送る Sec-Fetch-* も許可条件に含めて二重で判定する。
   const ref0 = request.headers.get('referer') || '';
-  if (ref0 && !/^https?:\/\/([a-z0-9-]+\.)?kirein\.net(\/|$)/i.test(ref0)) {
-    return new Response('', { status: 403, headers: CORS });   // 他サイトからの無断ホットリンク拒否
+  const site = (request.headers.get('sec-fetch-site') || '').toLowerCase();
+  const dest = (request.headers.get('sec-fetch-dest') || '').toLowerCase();
+  const okReferer = /^https?:\/\/([a-z0-9-]+\.)?kirein\.net(\/|$)/i.test(ref0);
+  const okFetch   = (site === 'same-origin' || site === 'same-site') && (dest === 'image' || dest === 'empty');
+  if (!okReferer && !okFetch) {
+    return new Response('', { status: 403, headers: CORS });   // 無断ホットリンク・スクリプトからの直叩きを拒否
   }
 
   let w = parseInt(url.searchParams.get('w') || '400', 10);
