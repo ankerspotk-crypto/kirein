@@ -95,7 +95,18 @@
     // ログイン状態を監視
     window.auth.onAuthStateChanged(async (firebaseUser) => {
       if(firebaseUser){
+        // ⚠️ 匿名認証でもここは発火する。投稿を通すための裏の認証であって
+        //    「本人がログインした」わけではないので、表示名や画面を書き換えない。
+        if(firebaseUser.isAnonymous){
+          try{
+            const g = getUserData();
+            if(g && !g.uid){ g.uid = firebaseUser.uid; localStorage.setItem('kirein_user', JSON.stringify(g)); }
+          }catch(e){}
+          updateUIForLogin();
+          return;
+        }
         // Googleログイン成功 → ユーザーデータを作成/更新
+        clearGuestFlag();
         let user = getUserData();
         if(!user || user.uid !== firebaseUser.uid){
           user = {
@@ -737,6 +748,10 @@ function getUserData(){
   return JSON.parse(localStorage.getItem('kirein_user')) || null;
 }
 
+function clearGuestFlag(){
+  try{ const u = getUserData(); if(u && u.guest){ delete u.guest; localStorage.setItem('kirein_user', JSON.stringify(u)); } }catch(e){}
+}
+
 function getOrCreateUser(nickname){
   let user = getUserData();
   if(!user){
@@ -768,7 +783,12 @@ function getOrCreateUser(nickname){
 //      課金が発生するのは「どの場所か」を特定する Google Places の方だけ。
 const GUEST_NAME = '匿名';   // ⚠️ 関数より前に置く（後置きだとTDZで落ちる）
 function ensureGuestUser(){
-  const u = getUserData() || getOrCreateUser(GUEST_NAME);
+  let u = getUserData();
+  if(!u){
+    u = getOrCreateUser(GUEST_NAME);
+    u.guest = true;                              // ＝まだ本人ログインしていない匿名の利用者
+    try{ localStorage.setItem('kirein_user', JSON.stringify(u)); }catch(e){}
+  }
   if(!u.nickname) u.nickname = GUEST_NAME;       // 表示が「 さん」と欠けないように
   return u;
 }
@@ -1181,6 +1201,14 @@ function showLoginModal(){
 
 function updateUIForLogin(){
   const user = getUserData();
+  // 匿名のまま使っている人は「ログイン済み」ではない＝ログイン導線を残す
+  if(user && user.guest){
+    const lb = document.getElementById('loginBtn');
+    const ul = document.getElementById('userLink');
+    if(lb) lb.style.display = '';
+    if(ul) ul.style.display = 'none';
+    return;
+  }
   if(user){
     const loginBtn = document.getElementById('loginBtn');
     const userLink = document.getElementById('userLink');
@@ -1205,6 +1233,7 @@ function submitNickname(){
     return;
   }
   getOrCreateUser(nickname);
+  clearGuestFlag();
   updateUIForLogin();
   document.getElementById('nicknameModal').style.display = 'none';
   document.getElementById('nicknameInput').value = '';
