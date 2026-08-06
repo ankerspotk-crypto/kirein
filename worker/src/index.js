@@ -23,6 +23,7 @@ export default {
     if (url.pathname === '/api/kirein-post' && request.method === 'POST') return kireinPost(request, env);
     if (url.pathname === '/api/prospect'    && request.method === 'GET')  return prospect(url, env);
     if (url.pathname === '/api/place-photo' && request.method === 'GET')  return placePhoto(request, url, env);
+    if (url.pathname === '/api/vote-counts' && request.method === 'GET')  return voteCounts(url, env);
     return json({ error: 'not found' }, 404);
   },
   // 定時：稼働中の各店の口コミを監視→新規ネガをアラート化→店にメール通知
@@ -33,8 +34,95 @@ export default {
     for (const store of results || []) {
       try { await monitorStore(store, env); } catch (e) { /* この店はスキップ */ }
     }
+    // 消費者アプリ向けの投票集計を作り直す（訪問者ごとの全件読取をなくすため）
+    try { await rebuildVoteCounts(env); } catch (e) { /* 次回のCronで作り直す */ }
   },
 };
+
+// ── 投票集計：消費者アプリが1リクエストで読むための事前集計 ──────────────
+//   ⚠️ これが無いと toilet.html が訪問のたびに Firestore の posts を全件取得する。
+//      投稿が増えるほど1人あたりの読取が増える構造＝拡散すると無料枠が枯れる。
+//      ここで6時間に1回だけ集計し、結果をD1に置いて配る（訪問者のFirestore読取=0）。
+async function voteCounts(url, env) {
+  // 手動再集計（初回投入や、Cronを待てない時に使う）。トークン必須。
+  if (url.searchParams.get('rebuild') === '1') {
+    if (!env.PROSPECT_TOKEN || url.searchParams.get('t') !== env.PROSPECT_TOKEN) return json({ error: 'forbidden' }, 403);
+    const r = await rebuildVoteCounts(env);
+    return json({ ok: true, ...r });
+  }
+  const row = await env.DB.prepare("SELECT value, updated FROM kv_cache WHERE key='vote_counts'").first();
+  if (!row) return json({ counts: {}, updated: null, note: 'not built yet' }, 200);
+  return new Response(JSON.stringify({ counts: JSON.parse(row.value), updated: row.updated }), {
+    headers: {
+      'Content-Type': 'application/json',
+      // エッジに載せて Worker 実行そのものも減らす（集計は6時間おきなので30分保持で十分）
+      'Cache-Control': 'public, max-age=1800',
+      ...CORS,
+    },
+  });
+}
+
+async function rebuildVoteCounts(env) {
+  const KEY = env.FIREBASE_API_KEY;
+  if (!KEY) return { skipped: 'FIREBASE_API_KEY 未設定' };
+  const endpoint = `https://firestore.googleapis.com/v1/projects/kirein-ac148/databases/(default)/documents:runQuery?key=${KEY}`;
+  const fv = (o) => (o ? (o.stringValue ?? o.integerValue ?? o.doubleValue ?? '') : '');
+  const counts = {};
+  let offset = 0, scanned = 0, truncated = false;
+  const PAGE = 1000, MAX = 50000;   // 上限に当たったら黙って切らずに報告する
+
+  while (true) {
+    const body = {
+      structuredQuery: {
+        from: [{ collectionId: 'posts' }],
+        // 必要な項目だけ取り出す＝投稿が増えても転送量が膨らまない
+        select: { fields: [
+          { fieldPath: 'place_id' }, { fieldPath: 'shop_id' },
+          { fieldPath: 'vote' },     { fieldPath: 'cleanliness_rating' },
+        ] },
+        offset, limit: PAGE,
+      },
+    };
+    // ⚠️ FIREBASE_API_KEY は kirein.net のリファラー制限付き。サーバー(Worker)からは
+    //    Referer を明示しないと弾かれる（付けないと 403 で集計が永久に空になる）。
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Referer': 'https://kirein.net/' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return { error: 'firestore ' + res.status };
+    const rows = await res.json();
+    const list = Array.isArray(rows) ? rows.filter(r => r.document) : [];
+    for (const r of list) {
+      const f = r.document.fields || {};
+      const key = fv(f.place_id) || fv(f.shop_id);
+      if (!key) continue;
+      if (!counts[key]) counts[key] = { clean: 0, dirty: 0 };
+      const vote = String(fv(f.vote) || '');
+      if (vote === 'clean')      counts[key].clean++;
+      else if (vote === 'dirty') counts[key].dirty++;
+      else {
+        // ⚠️ vote はクイック投票でしか入らない。通常投稿を一律 dirty に数えると
+        //    星5の投稿まで「気になる」に計上され、店に不当な評価が付く。評価点で判定する。
+        const r5 = Number(fv(f.cleanliness_rating));
+        if (!isNaN(r5) && r5 >= 4)      counts[key].clean++;
+        else if (!isNaN(r5) && r5 <= 2) counts[key].dirty++;
+        // 3（どちらとも言えない）はどちらにも数えない
+      }
+    }
+    scanned += list.length;
+    if (list.length < PAGE) break;
+    offset += PAGE;
+    if (offset >= MAX) { truncated = true; break; }
+  }
+
+  await env.DB.prepare(
+    "INSERT INTO kv_cache (key, value, updated) VALUES ('vote_counts', ?, ?) " +
+    "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated=excluded.updated"
+  ).bind(JSON.stringify(counts), new Date().toISOString()).run();
+
+  return { scanned, stores: Object.keys(counts).length, truncated };
+}
 
 // ── Stripe webhook：支払い完了→店をactive化（client_reference_id=place_id）──
 async function webhook(request, env) {
@@ -284,7 +372,8 @@ async function backfillKireinPosts(placeId, env) {
   const url = `https://firestore.googleapis.com/v1/projects/kirein-ac148/databases/(default)/documents:runQuery?key=${KEY}`;
   const body = { structuredQuery: { from: [{ collectionId: 'posts' }],
     where: { fieldFilter: { field: { fieldPath: 'place_id' }, op: 'EQUAL', value: { stringValue: placeId } } } } };
-  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  // ⚠️ キーは kirein.net のリファラー制限付き＝Refererを付けないと弾かれる
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Referer': 'https://kirein.net/' }, body: JSON.stringify(body) });
   if (!res.ok) return;
   const rows = await res.json();
   const fv = (o) => o ? (o.stringValue ?? o.integerValue ?? o.doubleValue ?? o.timestampValue ?? '') : '';

@@ -22,7 +22,7 @@
   "@type": "WebApplication",
   "name": "キレイン",
   "url": "https://kirein.net/toilet.html",
-  "description": "名古屋の飲食店・カフェ・バーのトイレ清潔さを評価・検索できるサービス。来店ユーザーのリアルな投稿で、本当に清潔なお店が見つかる。",
+  "description": "全国の飲食店・ホテル・駅・商業施設などのトイレ清潔さを評価・検索できるサービス。利用者のリアルな投稿で、本当に清潔な場所が見つかる。",
   "applicationCategory": "LifestyleApplication",
   "operatingSystem": "Web",
   "offers": {
@@ -48,7 +48,7 @@
       "name": "名古屋でトイレがきれいな飲食店を探すには？",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "キレインは名古屋全域の飲食店・カフェ・バーのトイレ清潔さを評価・検索できる無料サービスです。エリア・業態で絞り込んで、本当に清潔なお店を見つけられます。"
+        "text": "キレインは全国の飲食店・ホテル・駅・商業施設などのトイレ清潔さを評価・検索できる無料サービスです。店名や施設名で検索して、本当に清潔な場所を見つけられます。"
       }
     },
     {
@@ -276,8 +276,9 @@ function fallbackNicknameLogin(){
   .btn.ghost:hover{background:var(--mint-soft)}
 
   /* hero search */
-  .hero{background:radial-gradient(120% 120% at 80% -10%,#0d3d6b,#082444 60%,#061a38);color:#fff;padding:48px 0 30px;position:relative;overflow:hidden}
-  .hero-bg{position:absolute;inset:0;background-image:url('https://images.unsplash.com/photo-1564540574859-0dfb63985953?w=1400&auto=format&fit=crop&q=80');background-size:cover;background-position:center;opacity:0.22;z-index:0}
+  /* overflow は .hero-bg 側で切る（.hero に付けると検索候補がヒーロー外にはみ出せない） */
+  .hero{background:radial-gradient(120% 120% at 80% -10%,#0d3d6b,#082444 60%,#061a38);color:#fff;padding:48px 0 30px;position:relative}
+  .hero-bg{position:absolute;inset:0;overflow:hidden;background-image:url('https://images.unsplash.com/photo-1564540574859-0dfb63985953?w=1400&auto=format&fit=crop&q=80');background-size:cover;background-position:center;opacity:0.22;z-index:0}
   .hero .wrap{position:relative;z-index:1}
   .hero h1{font-size:clamp(26px,4vw,44px);font-weight:700;letter-spacing:.01em}
   .hero h1 .ac{color:var(--mint)}
@@ -288,6 +289,25 @@ function fallbackNicknameLogin(){
   .searchbar .ipt svg{flex:0 0 auto;color:var(--mint)}
   .searchbar input,.searchbar select{border:0;background:transparent;font-family:inherit;font-size:14px;color:var(--ink);width:100%;outline:none}
   .searchbar .btn{padding:0 26px;border-radius:11px;font-size:14px;flex:0 0 auto}
+  /* ライブ検索の候補ドロップダウン（店・ビル・建物） */
+  .hero-results{position:absolute;top:calc(100% + 8px);left:0;right:0;background:#fff;border-radius:14px;
+    box-shadow:0 24px 50px -18px rgba(0,0,0,.55);max-height:min(60vh,420px);overflow-y:auto;z-index:60;
+    text-align:left;-webkit-overflow-scrolling:touch}
+  .hero-results .hr-head{padding:9px 14px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:#fff;font-weight:700}
+  .hero-results .hr-item{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;
+    border-bottom:1px solid var(--line);transition:.15s}
+  .hero-results .hr-item:last-child{border-bottom:0}
+  .hero-results .hr-item:hover,.hero-results .hr-item:focus{background:var(--mint-soft)}
+  .hero-results .hr-ic{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:var(--bg-soft);
+    display:flex;align-items:center;justify-content:center;font-size:17px}
+  .hero-results .hr-main{flex:1;min-width:0}
+  .hero-results .hr-name{font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .hero-results .hr-sub{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .hero-results .hr-dist{flex:0 0 auto;font-size:11px;font-weight:700;color:var(--mint)}
+  .hero-results .hr-msg{padding:16px 14px;font-size:12.5px;color:var(--muted);text-align:center}
   .chips{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
   .chip{font-size:12.5px;padding:7px 15px;border-radius:999px;border:1px solid rgba(255,255,255,.28);color:#eaf4f0;background:rgba(255,255,255,.05);transition:.18s;white-space:nowrap}
   .chip:hover{border-color:var(--mint)}
@@ -505,53 +525,20 @@ function fallbackNicknameLogin(){
   <div class="hero-bg"></div>
   <div class="wrap">
     <h1>トイレは、<br><span class="ac">嘘をつかない。</span></h1>
-    <p class="lead">その店のトイレ、汚かった。においが気になった。——でも、面と向かっては言えない。<br>キレインなら<b>匿名</b>で、"直してほしい"をお店に届けられる。晒しではなく、改善のリクエスト。<b>全国どこのお店でも。</b></p>
+    <p class="lead">あの店のトイレ、汚かった。ホテルも、駅も、においが気になった。——でも、面と向かっては言えない。<br>キレインなら<b>匿名</b>で、"直してほしい"を届けられる。晒しではなく、改善のリクエスト。<b>全国どこの場所でも。</b></p>
 
-    <div class="searchbar">
+    <div class="searchbar" style="position:relative">
       <div class="fieldset">
         <div class="ipt">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input id="q" type="text" placeholder="気になった店名を入力（全国どこでも）" />
-        </div>
-        <div class="ipt" style="flex:0 0 150px">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-12A7 7 0 0 0 5 9c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/></svg>
-          <select id="area">
-            <option value="">エリアすべて</option>
-            <option value="名駅">名古屋駅</option>
-            <option value="伏見">伏見</option>
-            <option value="丸の内">丸の内</option>
-            <option value="栄">栄</option>
-            <option value="錦">錦</option>
-            <option value="矢場町">矢場町</option>
-            <option value="大須">大須</option>
-            <option value="金山">金山</option>
-            <option value="鶴舞">鶴舞</option>
-            <option value="今池">今池</option>
-            <option value="覚王山">覚王山</option>
-            <option value="千種">千種</option>
-            <option value="本山">本山</option>
-            <option value="星ヶ丘">星ヶ丘</option>
-            <option value="高岳">高岳</option>
-            <option value="黒川">黒川</option>
-            <option value="大曽根">大曽根</option>
-            <option value="守山">守山</option>
-            <option value="緑区">緑区</option>
-            <option value="天白">天白</option>
-          </select>
-        </div>
-        <div class="ipt" style="flex:0 0 140px">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-          <select id="cat">
-            <option value="">業態すべて</option>
-            <option value="レストラン">レストラン</option>
-            <option value="バー・居酒屋">バー・居酒屋</option>
-            <option value="カフェ">カフェ</option>
-            <option value="テイクアウト">テイクアウト</option>
-            <option value="ベーカリー">ベーカリー</option>
-          </select>
+          <input id="q" type="text" autocomplete="off"
+                 placeholder="店名・ホテル名・駅・施設名を入力（全国どこでも）"
+                 oninput="onHeroSearchInput()" onfocus="onHeroSearchInput()" />
         </div>
       </div>
-      <button class="btn" onclick="render()">店を探す</button>
+      <button class="btn" onclick="onHeroSearchInput(true)">探す</button>
+      <!-- ライブ検索の候補（店・ビル・建物） -->
+      <div id="heroResults" class="hero-results" style="display:none"></div>
     </div>
 
     <!-- 現在地ボタン -->
@@ -707,7 +694,7 @@ function fallbackNicknameLogin(){
       <h3 style="font-size:20px;color:var(--pine);margin-bottom:8px">キレインへようこそ！</h3>
       <p style="font-size:13px;color:var(--muted)">ニックネームを設定してください<br>投稿時に表示されません（匿名）</p>
     </div>
-    <input type="text" id="nicknameInput" placeholder="例：名古屋のタナカさん"
+    <input type="text" id="nicknameInput" placeholder="例：トイレ番のタナカさん"
       style="width:100%;padding:12px;border:2px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px;margin-bottom:16px;outline:none"
       onfocus="this.style.borderColor='var(--mint)'"
       onblur="this.style.borderColor='var(--line)'"
@@ -772,6 +759,27 @@ function getOrCreateUser(nickname){
   return user;
 }
 
+// ── 匿名のまま即投稿できるようにする（ニックネーム登録を必須にしない）──────────
+//   ⚠️ 投稿にコストはかからない：匿名認証は無料、Firestoreは1投稿=2書込（無料枠2万/日）。
+//      課金が発生するのは「どの場所か」を特定する Google Places の方だけ。
+const GUEST_NAME = '匿名';   // ⚠️ 関数より前に置く（後置きだとTDZで落ちる）
+function ensureGuestUser(){
+  const u = getUserData() || getOrCreateUser(GUEST_NAME);
+  if(!u.nickname) u.nickname = GUEST_NAME;       // 表示が「 さん」と欠けないように
+  return u;
+}
+
+// Firestore への書き込みは認証済みでないとルールに弾かれる。
+//   ⚠️ ニックネーム入力という"間"が無くなった分、認証完了(実測1.3秒)を待たずに
+//      送信されうる。ここで必ず待ち合わせて投稿の取りこぼしを防ぐ。
+function ensureAuthReady(){
+  if(!window.auth) return Promise.resolve(null);
+  if(window.auth.currentUser) return Promise.resolve(window.auth.currentUser);
+  return window.auth.signInAnonymously()
+    .then(c => c.user)
+    .catch(e => { console.warn('匿名ログイン失敗:', e.message); return null; });
+}
+
 function updateUserPoints(points){
   let user = getUserData();
   if(!user) return;
@@ -817,6 +825,9 @@ function getPosts(){
 //   ネガ生content／投稿者UIDは posts/{id}/private/detail へ隔離＝クライアント読取不可（店本人/運営のみ）。
 async function savePostToFirestore(post){
   if(!window.db) return;
+  // ⚠️ ルールが request.auth != null を要求する。認証前に書くと必ず弾かれるので必ず待つ。
+  const authUser = await ensureAuthReady();
+  if(authUser && !post.user_uid) post.user_uid = authUser.uid;
   try {
     const { negative_items, negative_comment, user_uid, ...pub } = post;
     const ref = await window.db.collection('posts').add({
@@ -963,7 +974,7 @@ function submitQuickVote(shopId){
         <div style="margin-top:8px;color:var(--muted);font-size:13px">Lv.${updatedUser.current_lv} ${['ビジター','認定レポーター','見習い調査員','公認調査員'][updatedUser.current_lv]}</div>
       </div>
       <div style="background:linear-gradient(135deg,#e8f5f0,#d0ece5);border-radius:12px;padding:14px;margin:12px 0">
-        <div style="font-size:13px;font-weight:700;color:var(--pine);margin-bottom:6px">🗺️ 名古屋の清潔マップが1件増えました！</div>
+        <div style="font-size:13px;font-weight:700;color:var(--pine);margin-bottom:6px">🗺️ 全国の清潔マップが1件増えました！</div>
         <div style="font-size:26px;font-weight:700;color:var(--pine);line-height:1">${(window.kireinTotalPosts||0).toLocaleString()} <span style="font-size:13px;color:var(--muted);font-weight:400">/ 1,000件</span></div>
         <div class="progress-bar" style="margin:8px 0 0"><div class="progress-fill" style="width:${Math.min(100,((window.kireinTotalPosts||0)/1000)*100)}%"></div></div>
         ${(updatedUser.post_count||0) === 1 ? '<div style="font-size:12px;color:var(--mint);margin-top:8px;font-weight:700">🌱 初代レポーター候補に認定されました！</div>' : ''}
@@ -1214,8 +1225,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 function showPostModal(){
-  const user = getUserData();
-  if(!user) return showLoginModal();
+  const user = ensureGuestUser();   // 匿名のまま進める
   closeModal();
 
   document.getElementById('modal').innerHTML = `
@@ -1233,7 +1243,7 @@ function showPostModal(){
 
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px">または選択：</div>
       <div id="storeListContainer" style="max-height:300px;overflow-y:auto">
-        <div style="text-align:center;color:var(--muted);padding:20px;font-size:12px">検索または GPS で店舗を選択してください</div>
+        <div style="text-align:center;color:var(--muted);padding:20px;font-size:12px">検索または GPS で場所を選択してください</div>
       </div>
     </div>`;
 
@@ -1322,22 +1332,23 @@ function initGooglePlacesAutocomplete(){
         autocompleteService = new google.maps.places.AutocompleteService();
       }
 
-      // GPS があれば現在地周辺、なければ名古屋市全体にバイアス
-      const center = loc || { lat: 35.17, lng: 136.88 };
-      const delta = loc ? 0.03 : 0.3; // GPS あり = 約3km、なし = 名古屋全域
-      const searchBounds = new google.maps.LatLngBounds(
-        { lat: center.lat - delta, lng: center.lng - delta },
-        { lat: center.lat + delta, lng: center.lng + delta }
-      );
+      // GPS があれば現在地周辺(約3km)にバイアス。無ければ全国検索（特定地域に寄せない）
+      const predReq = {
+        input: query,
+        componentRestrictions: { country: 'jp' },
+        language: 'ja'
+      };
+      if(loc){
+        const delta = 0.03; // 約3km
+        predReq.bounds = new google.maps.LatLngBounds(
+          { lat: loc.lat - delta, lng: loc.lng - delta },
+          { lat: loc.lat + delta, lng: loc.lng + delta }
+        );
+      }
 
       try {
         autocompleteService.getPlacePredictions(
-          {
-            input: query,
-            bounds: searchBounds,
-            componentRestrictions: { country: 'jp' },
-            language: 'ja'
-          },
+          predReq,
           (predictions, status) => {
             if(status === google.maps.places.PlacesServiceStatus.OK && predictions) {
               const resultsDiv = document.getElementById('autocompleteResults');
@@ -1376,13 +1387,15 @@ function selectGooglePlace(placeId, placeName){
     return;
   }
 
-  placesService.getDetails({ placeId: placeId, language: 'ja' }, (place, status) => {
+  // 💰 fields 指定で基本データのみ課金（口コミ/評価/電話/サイトは取らない＝キレインには不要）
+  placesService.getDetails({ placeId: placeId, language: 'ja', fields: PLACE_BASIC_FIELDS },
+    (place, status) => {
     if(status === google.maps.places.PlacesServiceStatus.OK && place) {
       // Google Map の店舗情報を Kirein に登録
       const newStore = {
         id: Math.max(...STORES.map(s => s.id), 0) + 1,
         name: place.name,
-        area: extractArea(place.formatted_address) || '名古屋',
+        area: extractArea(place.formatted_address) || '',
         cat: extractCatFromTypes(place.types || []),
         rank: 'bronze',
         icon: '🍽️',
@@ -1393,12 +1406,9 @@ function selectGooglePlace(placeId, placeName){
         lng: place.geometry.location.lng(),
         x: Math.random() * 100,
         y: Math.random() * 100,
-        reviews: place.reviews || [],
+        reviews: [],
         placeId: placeId,
-        rating: place.rating || 3.5,
-        address: place.formatted_address,
-        phone: place.formatted_phone_number || '',
-        website: place.website || ''
+        address: place.formatted_address
       };
 
       // STORES に追加（重複チェック）
@@ -1415,9 +1425,13 @@ function selectGooglePlace(placeId, placeName){
 }
 
 function extractArea(address){
-  // 住所から区を抽出（例：「〇〇区」）
-  const match = address.match(/(.+区)/);
-  return match ? match[1] : null;
+  // 住所から市区町村を抽出（全国対応）。「区」の無い市町村も拾う
+  if(!address) return null;
+  // 「日本、」「〒460-0008」等の接頭を除去
+  const a = String(address).replace(/^日本[、,\s]*/, '').replace(/〒?\s*\d{3}-?\d{4}\s*/, '');
+  // 政令市の行政区（例：名古屋市中区）はそこまで、それ以外は市/区/町/村まで
+  const m = a.match(/[^\s\d]+?市[^\s\d]+?区|[^\s\d]+?[市区町村]/);
+  return m ? m[0] : null;
 }
 
 function filterStores(){
@@ -1861,11 +1875,8 @@ async function submitPost(e, shopId){
   e.preventDefault();
 
   try {
-    let user = getUserData();
-    if(!user){
-      document.getElementById('nicknameModal').style.display = 'flex';
-      return;
-    }
+    // 匿名のまま送信できる（ニックネーム未設定でも止めない）
+    let user = ensureGuestUser();
 
     const form = e.target;
     const tier    = document.getElementById('postTier')?.value || 'simple';
@@ -1940,7 +1951,7 @@ async function submitPost(e, shopId){
           <div style="margin-top:8px;color:var(--muted);font-size:13px">Lv.${updatedUser.current_lv} ${['ビジター','認定レポーター','見習い調査員','公認調査員'][updatedUser.current_lv]}</div>
         </div>
         <div style="background:linear-gradient(135deg,#e8f5f0,#d0ece5);border-radius:12px;padding:14px;margin:12px 0">
-          <div style="font-size:13px;font-weight:700;color:var(--pine);margin-bottom:6px">🗺️ 名古屋の清潔マップが1件増えました！</div>
+          <div style="font-size:13px;font-weight:700;color:var(--pine);margin-bottom:6px">🗺️ 全国の清潔マップが1件増えました！</div>
           <div style="font-size:26px;font-weight:700;color:var(--pine);line-height:1">${(window.kireinTotalPosts||0).toLocaleString()} <span style="font-size:13px;color:var(--muted);font-weight:400">/ 1,000件</span></div>
           <div class="progress-bar" style="margin:8px 0 0">
             <div class="progress-fill" style="width:${Math.min(100,((window.kireinTotalPosts||0)/1000)*100)}%"></div>
@@ -2141,15 +2152,10 @@ function showSearchPage(){
 }
 
 function showPostPage(){
-  // 未ログインの場合はニックネームモーダルを表示
-  if(!getUserData()){
-    document.getElementById('nicknameModal').style.display = 'flex';
-    // ログイン後に投稿ページに戻る
-    document.getElementById('nicknameInput').onkeydown = (e) => {
-      if(e.key === 'Enter') { submitNickname(); showPostPage(); }
-    };
-    return;
-  }
+  // 匿名のまま即投稿できる：ニックネーム登録は求めず、裏でゲストとして用意する
+  //   （名前は後からマイページで設定可能。ここで止めると投稿の最大の離脱点になる）
+  ensureGuestUser();
+  ensureAuthReady();   // 認証を先出しで温めておく（送信時の待ち時間を消す）
 
   // 投稿ページ（フルスクリーン）を表示
   document.querySelectorAll('section, .wrap:not(.post-page-wrap), .layout, .ownerbar, .seo, footer').forEach(el => {
@@ -2169,7 +2175,7 @@ function showPostPage(){
         <button onclick="window.location.hash='/'" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:16px;display:inline-flex;align-items:center;gap:6px">
           ← トップに戻る
         </button>
-        <h1 style="font-size:28px;font-weight:700;margin-bottom:8px">いまいるお店の清潔感を報告する</h1>
+        <h1 style="font-size:28px;font-weight:700;margin-bottom:8px">いまいる場所の清潔感を報告する</h1>
         <p style="color:#bcd2cb;font-size:13px">トイレの清潔さ、空気の良さを5段階評価で投稿。ポイントを獲得して、キレインレポーターへ！</p>
       </div>
     </section>
@@ -2180,16 +2186,17 @@ function showPostPage(){
 
           <!-- Step 1: 店舗検索 -->
           <div id="postStep1" style="display:block">
-            <h2 style="font-size:18px;color:var(--pine);margin-bottom:16px">いまいるお店を選んでください</h2>
+            <h2 style="font-size:18px;color:var(--pine);margin-bottom:16px">いまいる場所を選んでください</h2>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">飲食店だけでなく、ホテル・駅・商業施設など<b>トイレを使った場所</b>ならどこでも投稿できます</div>
 
-            <!-- ① 近くのお店を探すボタン（メイン） -->
+            <!-- ① 近くの場所を探すボタン（メイン） -->
             <button onclick="searchNearbyRestaurants()" style="width:100%;padding:16px;background:linear-gradient(135deg,var(--mint),#1a9e84);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-size:15px;margin-bottom:12px;box-shadow:0 4px 12px rgba(37,181,152,.3)">
-              📍 近くのお店を探す
+              📍 近くの場所を探す
             </button>
 
-            <!-- ② 店名で検索 -->
+            <!-- ② 名前で検索 -->
             <div style="margin-bottom:12px">
-              <input type="text" id="googlePlacesInput" placeholder="🔍 店名で検索..." style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px">
+              <input type="text" id="googlePlacesInput" placeholder="🔍 店名・ホテル名・施設名で検索..." style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px">
               <div id="autocompleteResults" style="display:none;background:#fff;border:1px solid var(--line);border-radius:8px;margin-top:4px;max-height:200px;overflow-y:auto"></div>
             </div>
 
@@ -2200,10 +2207,10 @@ function showPostPage(){
             </div>
 
             <div id="storeListContainer" style="max-height:300px;overflow-y:auto;margin-bottom:16px">
-              <div style="text-align:center;color:var(--muted);padding:20px;font-size:12px">検索または GPS で店舗を選択してください</div>
+              <div style="text-align:center;color:var(--muted);padding:20px;font-size:12px">検索または GPS で場所を選択してください</div>
             </div>
 
-            <div style="text-align:center;color:var(--muted);font-size:12px;padding:8px">👆 上のリストからお店をタップしてください</div>
+            <div style="text-align:center;color:var(--muted);font-size:12px;padding:8px">👆 上のリストから場所をタップしてください</div>
           </div>
 
           <!-- Step 2: 評価入力 -->
@@ -2287,9 +2294,9 @@ async function searchNearbyRestaurants(){
           🤖 Android: ブラウザの🔒アイコン → 位置情報 → 許可<br>
           💻 PC: アドレスバーの🔒 → 位置情報 → 許可
         </div>
-        <div style="color:var(--muted);font-size:12px;text-align:center;margin-bottom:12px">または店名で検索してください 👇</div>
+        <div style="color:var(--muted);font-size:12px;text-align:center;margin-bottom:12px">または名前で検索してください 👇</div>
         <button onclick="document.getElementById('googlePlacesInput').focus()" style="width:100%;padding:12px;background:var(--pine);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">
-          🔍 店名で検索する
+          🔍 名前で検索する
         </button>
       </div>`;
     return;
@@ -2329,6 +2336,23 @@ function getHighAccuracyLocation(){
   });
 }
 
+// トイレがあるサービス業を横断で拾うための検索タイプ（飲食だけに絞らない）
+//   💰 Places の nearbySearch は「1リクエスト＝1タイプ＝1課金」。全部を毎回投げるのは無駄なので
+//      既定は2本だけ投げ、足りない人にだけ追加分を投げる（需要駆動）。
+//   ⚠️ establishment だけでは足りない（本番実測）：名駅では最寄り20枠が館内テナントで埋まり
+//      ホテルが1件も入らなかった。だから lodging は既定に入れる。
+const PLACE_SEARCH_TYPES_CORE = [
+  'establishment',      // 最寄りから何でも（飲食・コンビニ・施設が自然に混ざる受け皿）
+  'lodging'             // ホテル・旅館（establishment では埋もれるため個別に確保）
+];
+// 「もっと候補を出す」を押した人にだけ追加で投げる
+const PLACE_SEARCH_TYPES_MORE = [
+  'restaurant', 'cafe', 'bar', 'convenience_store', 'shopping_mall',
+  'train_station'       // 駅（本番実測：新宿駅等を正しく取得）
+];
+// ⚠️ transit_station は入れない：バス停まで大量に混ざりトイレの無い候補で埋まる（本番実測）。
+//    沖縄ゆいレール等の transit_station 型の駅は establishment の総当たりと名前検索で拾える。
+
 function searchWithExpandingRadius(loc, radii, listContainer){
 
   // placesService が未初期化なら再試行
@@ -2348,13 +2372,15 @@ function searchWithExpandingRadius(loc, radii, listContainer){
 
   listContainer.innerHTML = `
     <div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">
-      🗺️ Googleマップで近くの飲食店を検索中...
+      🗺️ Googleマップで近くの場所を検索中...
     </div>`;
 
-  // restaurant / bar / cafe を並列で検索してマージ
-  const types = ['restaurant', 'bar', 'cafe', 'meal_takeaway', 'bakery'];
+  // 💰 既定は CORE の2本だけ（＝1タップ2課金）。足りない人が「もっと候補を出す」を押した時だけ
+  //    MORE を追加で投げる。以前は毎回8本投げていた＝大半のユーザーで無駄だった。
+  const types = (window._nearbyWantMore ? PLACE_SEARCH_TYPES_MORE : PLACE_SEARCH_TYPES_CORE);
   let done = 0;
-  const allPlaces = new Map(); // place_id → place
+  const allPlaces = window._nearbyPlaces instanceof Map ? window._nearbyPlaces : new Map();
+  window._nearbyPlaces = allPlaces;   // place_id → place（追加検索時に前回分とマージ）
 
   const onAllDone = () => {
     if(allPlaces.size === 0){
@@ -2362,14 +2388,14 @@ function searchWithExpandingRadius(loc, radii, listContainer){
         <div style="padding:16px">
           <div style="text-align:center;margin-bottom:14px">
             <div style="font-size:32px;margin-bottom:8px">🗺️</div>
-            <div style="font-weight:700;color:var(--ink);margin-bottom:4px">近くにお店が見つかりませんでした</div>
+            <div style="font-weight:700;color:var(--ink);margin-bottom:4px">近くに場所が見つかりませんでした</div>
           </div>
           <div style="display:grid;gap:8px">
             <button onclick="searchNearbyRestaurants()" style="padding:11px;background:var(--mint);color:#061e36;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">
               📍 もう一度 GPS で探す
             </button>
             <button onclick="document.getElementById('googlePlacesInput').focus()" style="padding:11px;background:var(--pine);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">
-              🔍 店名で検索する
+              🔍 名前で検索する
             </button>
             <button onclick="showManualInput()" style="padding:11px;background:var(--bg-soft);color:var(--pine);border:1px solid var(--line);border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">
               ✏️ 店名を直接入力する
@@ -2415,17 +2441,29 @@ function searchWithExpandingRadius(loc, radii, listContainer){
   });
 }
 
+// 💰 追加の業種で探し直す（押した人にだけ追加課金が発生する needs-driven な拡張）
+function searchNearbyMore(){
+  if(window._nearbyWantMore) return;      // 追加検索は1回だけ
+  window._nearbyWantMore = true;
+  const el = document.getElementById('storeListContainer');
+  const loc = userLocation;
+  if(!el || !loc){ searchNearbyRestaurants(); return; }
+  el.insertAdjacentHTML('afterbegin',
+    '<div style="text-align:center;padding:10px;color:var(--muted);font-size:12px">🔍 他の業種からも探しています…</div>');
+  searchWithExpandingRadius(loc, [50,100,200,500], el);
+}
+
 function showManualInput(){
   const listContainer = document.getElementById('storeListContainer');
   listContainer.innerHTML = `
     <div style="padding:16px">
-      <div style="font-size:13px;font-weight:700;color:var(--pine);margin-bottom:10px">✏️ お店を手動で登録</div>
-      <input type="text" id="manualShopName" placeholder="お店の名前を入力" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:700;color:var(--pine);margin-bottom:10px">✏️ 場所を手動で登録</div>
+      <input type="text" id="manualShopName" placeholder="店名・ホテル名・施設名を入力" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:8px">
       <button onclick="registerManualShop()" style="width:100%;padding:12px;background:var(--mint);color:#061e36;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">
         このお店で投稿する →
       </button>
       <div style="color:var(--muted);font-size:11px;text-align:center;margin-top:10px">
-        Google Map に登録されていないお店でも投稿できます
+        Google Map に登録されていない場所でも投稿できます
       </div>
     </div>`;
   setTimeout(() => document.getElementById('manualShopName')?.focus(), 100);
@@ -2433,13 +2471,13 @@ function showManualInput(){
 
 function registerManualShop(){
   const name = document.getElementById('manualShopName')?.value?.trim();
-  if(!name){ alert('お店の名前を入力してください'); return; }
+  if(!name){ alert('場所の名前を入力してください'); return; }
 
   // 新規店舗として登録
   const newStore = {
     id: Date.now(),
     name: name,
-    area: '名古屋',
+    area: '',
     cat: '飲食店',
     rank: 'bronze',
     icon: '🍽️',
@@ -2462,7 +2500,7 @@ function renderNearbyList(stores, container){
     el.innerHTML = `
       <div style="text-align:center;padding:24px 16px">
         <div style="font-size:28px;margin-bottom:8px">🔍</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:16px">近くのお店が見つかりませんでした</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px">近くに場所が見つかりませんでした</div>
         ${_notFoundGuide()}
       </div>`;
     return;
@@ -2494,16 +2532,23 @@ function renderNearbyList(stores, container){
 }
 
 function _notFoundGuide(){
+  // 💰 追加の業種検索は「見つからなかった人」だけが押す＝必要な人にだけ課金が発生する
+  const more = window._nearbyWantMore ? '' : `
+      <button onclick="searchNearbyMore()"
+        style="width:100%;padding:10px;background:var(--mint);color:#061e36;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">
+        🏨 ホテル・駅・お店からもっと探す
+      </button>`;
   return `
     <div style="margin-top:16px;padding:14px;background:#f6f9f8;border-radius:10px;text-align:center">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">お探しのお店が見つからない場合</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">お探しの場所が見つからない場合</div>
+      ${more}
       <button onclick="document.getElementById('googlePlacesInput')?.focus();document.getElementById('googlePlacesInput')?.scrollIntoView({behavior:'smooth'})"
         style="width:100%;padding:10px;background:var(--pine);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">
-        🔍 店名で検索する
+        🔍 名前で検索する
       </button>
       <button onclick="showManualInput()"
         style="width:100%;padding:10px;background:#fff;color:var(--pine);border:1px solid var(--line);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
-        ✏️ 手動でお店を登録する
+        ✏️ 手動で場所を登録する
       </button>
     </div>`;
 }
@@ -2586,6 +2631,12 @@ function initStarRatings(){
 let placesService = null;
 let autocompleteService = null;
 
+// 💰 getDetails で取得するフィールド（Basic Data のみ＝最安）。
+//   ⚠️ fields を省くと全フィールドが返り、Contact(電話/サイト)・Atmosphere(評価/口コミ)まで課金される。
+//   キレインに必要なのは「どこの場所か」だけ。評価は自前の投稿で持つ。
+//   ⚠️ Google口コミを取らない＝帰属表示の義務も負わない（ToS上も安全側）。
+const PLACE_BASIC_FIELDS = ['place_id','name','formatted_address','geometry','types'];
+
 function initializeGooglePlaces(){
   if(window.google && google.maps && google.maps.places) {
     const target = window.gmap || (() => { const d = document.createElement('div'); document.body.appendChild(d); return d; })();
@@ -2596,18 +2647,35 @@ function initializeGooglePlaces(){
 
 function extractCatFromTypes(types){
   if(!types||!types.length) return '飲食店';
+  // ⚠️コンビニ/スーパーは food タグを持つので飲食判定より先に外す（ファミマがレストラン化する）
+  if(types.includes('convenience_store'))                          return 'コンビニ';
+  if(types.includes('supermarket')||types.includes('grocery_or_supermarket')) return 'スーパー';
+  if(types.includes('gas_station'))                                return 'ガソリンスタンド';
+  // 飲食
   if(types.includes('bar'))    return 'バー・居酒屋';
   if(types.includes('cafe'))   return 'カフェ';
   if(types.includes('bakery')) return 'ベーカリー';
   if(types.includes('meal_takeaway') && !types.includes('restaurant')) return 'テイクアウト';
-  return 'レストラン';
+  if(types.includes('restaurant') || types.includes('food')) return 'レストラン';
+  // 飲食以外の「トイレを借りる場所」＝ビル・施設も投稿対象（全国のトイレを拾うため）
+  if(types.includes('airport'))                                    return '空港';
+  if(types.includes('train_station')||types.includes('subway_station')
+     ||types.includes('transit_station')||types.includes('bus_station')) return '駅・ターミナル';
+  if(types.includes('shopping_mall')||types.includes('department_store')) return '商業施設';
+  if(types.includes('park')||types.includes('tourist_attraction'))  return '公園・施設';
+  if(types.includes('lodging'))                                    return '宿泊';
+  if(types.includes('hospital')||types.includes('local_government_office')
+     ||types.includes('library')||types.includes('city_hall'))      return '公共施設';
+  if(types.includes('store'))                                      return '店舗';
+  if(types.includes('premise')||types.includes('establishment'))    return '建物・施設';
+  return '施設';
 }
 
 function placeToStore(place, idx){
   return {
     id: Date.now() + idx,
     name: place.name,
-    area: extractArea(place.vicinity || place.formatted_address || '') || '名古屋',
+    area: extractArea(place.vicinity || place.formatted_address || '') || '',
     cat: extractCatFromTypes(place.types || []),
     rank: 'bronze',
     icon: '🍽️',
@@ -2675,7 +2743,7 @@ function nearbySearchWithPagination(request, allResults, resolve){
 
 // ========== 投票数をFirestoreから集計してSTORESに反映 ==========
 const VOTES_CACHE_KEY = 'kirein_votes_v1';
-const VOTES_CACHE_TTL = 15 * 60 * 1000; // 15分
+const VOTES_CACHE_TTL = 6 * 60 * 60 * 1000; // 6時間（💰再訪問者の再集計を抑える。集計値は多少古くて構わない）
 
 async function loadVoteCounts(){
   if(!window.db) return;
@@ -2691,7 +2759,25 @@ async function loadVoteCounts(){
       }
     }
   }catch(e){}
-  // Firestore posts から集計
+  // 💰 まず事前集計ドキュメントを1件だけ読む（1訪問=1読取）。
+  //   ⚠️ 下の posts 全件取得は「投稿数 × 訪問者数」で読取が増える構造で、
+  //      投稿が増えるほど1人あたりのコストが上がる＝拡散すると無料枠が即枯れる。
+  //      集計は cache/vote_counts に寄せ、ここはフォールバックとして残す。
+  try{
+    const res = await fetch('https://kirein.net/api/vote-counts', { cache: 'default' });
+    if(res.ok){
+      const d = await res.json();
+      const counts = d && d.counts;
+      if(counts && Object.keys(counts).length){
+        window._kireinVoteCache = counts;
+        try{ localStorage.setItem(VOTES_CACHE_KEY, JSON.stringify({ data: counts, ts: Date.now() })); }catch(e){}
+        applyVoteCountsToStores(counts);
+        return;
+      }
+    }
+  }catch(e){ /* 集計がまだ無い → 従来の全件集計にフォールバック */ }
+
+  // フォールバック：Firestore posts から集計（⚠️ 全件読取。集計が用意できるまでの暫定）
   try{
     const snap = await window.db.collection('posts').get();
     const counts = {};
@@ -2700,8 +2786,16 @@ async function loadVoteCounts(){
       const key = d.place_id || d.shop_id;
       if(!key) return;
       if(!counts[key]) counts[key] = { clean:0, dirty:0 };
-      if(d.vote === 'clean') counts[key].clean++;
-      else counts[key].dirty++;
+      // ⚠️ vote はクイック投票でしか入らない。無い投稿を一律 dirty に数えると
+      //    星5の投稿まで「気になる」に計上され、店に不当な評価が付く。評価点で判定する。
+      if(d.vote === 'clean')      counts[key].clean++;
+      else if(d.vote === 'dirty') counts[key].dirty++;
+      else {
+        const r5 = Number(d.cleanliness_rating);
+        if(!isNaN(r5) && r5 >= 4)      counts[key].clean++;
+        else if(!isNaN(r5) && r5 <= 2) counts[key].dirty++;
+        // 3（どちらとも言えない）はどちらにも数えない
+      }
     });
     window._kireinVoteCache = counts;
     try{ localStorage.setItem(VOTES_CACHE_KEY, JSON.stringify({ data: counts, ts: Date.now() })); }catch(e){}
@@ -2796,10 +2890,15 @@ async function loadRestaurantsFromAPI(){
           const stores = JSON.parse(d.data);
           if(stores?.length > 0) allStores.push(...stores);
         });
-        if(allStores.length > 0 && Date.now() - latestMs < WEEK_MS){
+        // 💰 期限切れでも「古いキャッシュを出し続ける」(stale-while-revalidate)。
+        //   ⚠️ ここで諦めて下の Places 直取得へ落ちると、訪問者1人あたり
+        //      22地点 × 3タイプ × 最大3ページ ＝ 最大198回の nearbySearch が走り課金が爆発する。
+        //      店リストが多少古いことより、全訪問者による再スクレイプの方が遥かに有害。
+        if(allStores.length > 0){
+          const stale = Date.now() - latestMs >= WEEK_MS;
           STORES = allStores;
           try{ localStorage.setItem(LOCAL_KEY, JSON.stringify({ stores: allStores, timestamp: Date.now() })); }catch(e){}
-          console.log(`✅ Firestoreキャッシュ(${chunkCount}チャンク): ${allStores.length}店舗`);
+          console.log(`✅ Firestoreキャッシュ(${chunkCount}チャンク): ${allStores.length}店舗${stale ? '（期限切れだが再取得はしない）' : ''}`);
           render();
           loadVoteCounts();
           return;
@@ -3013,8 +3112,7 @@ let onlyCertified = false; // キレイン認定店フィルター
 let onlyKireinVoted = false; // キレイン評価ありフィルター
 const activeAttrs = new Set();
 
-// populate selects + chips
-const areaSel=document.getElementById('area'),catSel=document.getElementById('cat');
+// populate chips
 const chipBox=document.getElementById('chips');
 
 // キレイン認定店チップ（先頭に追加）
@@ -3064,13 +3162,12 @@ const star=n=>'★'.repeat(Math.round(n))+'☆'.repeat(5-Math.round(n));
 
 function filtered(){
   const q=document.getElementById('q').value.trim();
-  const ar=areaSel.value,ct=catSel.value,sort=document.getElementById('sort').value;
+  const sort=document.getElementById('sort').value;
   let r=STORES.filter(s=>{
     const rank = calcStoreRank(s.id);
     if(onlyCertified && rank==='bronze') return false; // 認定店フィルター
     if(onlyKireinVoted && (s._cleanVotes||0)+(s._dirtyVotes||0) === 0) return false; // キレイン評価ありフィルター
     return (!q||s.name.includes(q)||s.area.includes(q)||s.cat.includes(q)||(s.address||'').includes(q))&&
-           (!ar||(s.address||'').includes(ar)||s.area.includes(ar))&&(!ct||s.cat===ct)&&
            [...activeAttrs].every(a=>{
              if(a==='🔄 トイレリピート') return (calcScore(s.id)?.repeatCount||0) > 0;
              return s.tags.includes(a);
@@ -3139,9 +3236,7 @@ async function searchByGPS(){
 
   gpsSearchActive    = true;
   gpsSearchLocation  = loc;
-  // GPS ON時はエリア・業態フィルターをリセット
-  areaSel.value = '';
-  catSel.value  = '';
+  // GPS ON時は検索キーワードをリセット
   document.getElementById('q').value = '';
   btn.style.background = 'rgba(37,181,152,.35)';
   btn.style.borderColor = 'var(--mint)';
@@ -3198,8 +3293,6 @@ async function _autoGPS(){
 
   gpsSearchActive   = true;
   gpsSearchLocation = loc;
-  areaSel.value = '';
-  catSel.value  = '';
   document.getElementById('q').value = '';
   btn.style.background  = 'rgba(37,181,152,.35)';
   btn.style.borderColor = 'var(--mint)';
@@ -3237,8 +3330,7 @@ async function _autoGPS(){
 
 function goToPost(storeId){
   // 探すページのカードから直接投稿フロームを表示
-  const user = getUserData();
-  if(!user) return showLoginModal();
+  ensureGuestUser();   // 匿名のまま進める
   closeModal();
   showPostModal();
 }
@@ -3261,6 +3353,228 @@ function calcScore(shopId){
   };
 }
 
+// ========== ヒーローのライブ検索（現在地＋キーワードで店・ビル・建物を最短で見つける）==========
+// 狙い：近隣リストやマップを眺めさせず、「いま口コミしたい場所」に一発で着地させる。
+//   ローカル(既知店) → Google Places(タイプ無制限＝雑居ビル/駅ビル/施設も出る) のハイブリッド。
+let _heroTimer = null;
+let _heroSeq   = 0;              // 古い非同期結果を捨てるための世代番号
+let _heroLastQuery = '';
+// 💰 Autocomplete セッショントークン。入力〜選択(getDetails)までを1セッションとして課金させる。
+//   未使用だと「キーストロークごとに1課金」になる（Google公式の推奨）。選択後に破棄して次のセッションへ。
+let _heroSessionToken = null;
+
+function heroResultsEl(){ return document.getElementById('heroResults'); }
+
+function hideHeroResults(){
+  const el = heroResultsEl();
+  if(el){ el.style.display = 'none'; el.innerHTML = ''; }
+}
+
+function _heroMsg(html){
+  const el = heroResultsEl();
+  if(!el) return;
+  el.innerHTML = `<div class="hr-msg">${html}</div>`;
+  el.style.display = 'block';
+}
+
+function onHeroSearchInput(force){
+  const input = document.getElementById('q');
+  if(!input) return;
+  const q = input.value.trim();
+
+  clearTimeout(_heroTimer);
+
+  if(q.length < 2){
+    hideHeroResults();
+    if(force) render(); // 空で「探す」＝下のブラウズを素通しで更新
+    return;
+  }
+
+  // 💰 入力が落ち着いてから投げる（短いと打鍵ごとにリクエストが飛んで無駄に課金される）
+  _heroTimer = setTimeout(() => { runHeroSearch(q); }, force ? 0 : 400);
+}
+
+async function runHeroSearch(q){
+  const seq = ++_heroSeq;
+  _heroLastQuery = q;
+  _heroMsg('🔍 探しています…');
+
+  // 現在地は「あれば使う」。無くても全国検索として成立させる（待たせない）
+  const loc = await Promise.race([
+    getUserLocation(),
+    new Promise(r => setTimeout(() => r(null), 1800))
+  ]);
+  if(seq !== _heroSeq) return; // より新しい入力が来ている＝この結果は捨てる
+
+  const ql = q.toLowerCase();
+
+  // ① 既にキレインが知っている店（投稿済み＝声が付いている可能性が高い）
+  let local = STORES.filter(s =>
+    (s.name||'').toLowerCase().includes(ql) ||
+    (s.address||'').toLowerCase().includes(ql) ||
+    (s.area||'').toLowerCase().includes(ql)
+  );
+  if(loc){
+    local = local.map(s => ({
+      ...s,
+      _d: (s.lat && s.lng) ? calculateDistance(loc.lat, loc.lng, s.lat, s.lng) : null
+    })).sort((a,b) => (a._d ?? 9e9) - (b._d ?? 9e9));
+  }
+  local = local.slice(0, 5);
+
+  renderHeroResults(local, [], true);
+
+  // 💰 コスト節約：現在地のすぐそばに既知の候補が揃っているなら Google は呼ばない
+  //   （キレインが既に持っている店＝無料。近い＝いま居る場所である可能性が高い）
+  if(loc && local.length >= 3 && local[0]._d != null && local[0]._d < 1){
+    renderHeroResults(local, [], false, false);
+    return;
+  }
+
+  // ② Google Places（タイプ無制限＝店・ビル・建物・施設すべて）
+  if(!window.google || !google.maps?.places){
+    if(!local.length) _heroMsg('該当する場所が見つかりませんでした');
+    return;
+  }
+  if(!autocompleteService) autocompleteService = new google.maps.places.AutocompleteService();
+
+  // 💰 セッショントークン：入力中の複数リクエストを1セッションとして課金させる
+  //   （未使用だとキーストロークごとに課金。選択時の getDetails にも同じ token を渡す）
+  if(!_heroSessionToken) _heroSessionToken = new google.maps.places.AutocompleteSessionToken();
+
+  const req = { input: q, componentRestrictions: { country: 'jp' }, language: 'ja',
+                sessionToken: _heroSessionToken };
+  if(loc){
+    // 現在地から約10km四方を優先（＝いる場所の店・ビルが上に来る）。圏外も除外はしない
+    const d = 0.09;
+    req.locationBias = new google.maps.LatLngBounds(
+      { lat: loc.lat - d, lng: loc.lng - d },
+      { lat: loc.lat + d, lng: loc.lng + d }
+    );
+  }
+
+  const knownIds = new Set(STORES.filter(s=>s.placeId).map(s=>s.placeId));
+  const pick = (preds) => preds.filter(p => !knownIds.has(p.place_id)).slice(0, 8);
+
+  autocompleteService.getPlacePredictions(req, (preds, status) => {
+    if(seq !== _heroSeq) return; // 古い結果は捨てる
+    const OKST = google.maps.places.PlacesServiceStatus.OK;
+    const list = (status === OKST && preds) ? pick(preds) : [];
+
+    // 現在地の圏内で見つからない時は、全国で引き直す（旅行先・出張先での取りこぼしを防ぐ）
+    if(!list.length && req.locationBias){
+      const wide = { input: q, componentRestrictions: { country: 'jp' }, language: 'ja',
+                     sessionToken: _heroSessionToken };  // 同一セッション＝追加課金にしない
+      autocompleteService.getPlacePredictions(wide, (p2, s2) => {
+        if(seq !== _heroSeq) return;
+        renderHeroResults(local, (s2 === OKST && p2) ? pick(p2) : [], false, !loc);
+      });
+      return;
+    }
+    renderHeroResults(local, list, false, !loc);
+  });
+}
+
+function renderHeroResults(local, preds, loading, noGps){
+  const el = heroResultsEl();
+  if(!el) return;
+
+  let html = '';
+
+  if(local.length){
+    html += `<div class="hr-head">キレインに投稿がある場所</div>`;
+    html += local.map(s => {
+      const dist = (s._d != null)
+        ? `<div class="hr-dist">${s._d < 1 ? Math.round(s._d*1000)+'m' : s._d.toFixed(1)+'km'}</div>` : '';
+      const sub = esc(s.address || s.area || '');
+      return `<div class="hr-item" onclick="heroPickLocal('${String(s.id).replace(/'/g,"\\'")}')">
+        <div class="hr-ic">${s.icon || '🚻'}</div>
+        <div class="hr-main">
+          <div class="hr-name">${esc(s.name)}</div>
+          <div class="hr-sub">${sub}</div>
+        </div>${dist}
+      </div>`;
+    }).join('');
+  }
+
+  if(preds.length){
+    html += `<div class="hr-head">地図から探す（店舗・ホテル・駅・施設）</div>`;
+    html += preds.map(p => {
+      const name = p.structured_formatting?.main_text || p.description || '';
+      const sub  = p.structured_formatting?.secondary_text || '';
+      return `<div class="hr-item" onclick="heroPickPlace('${String(p.place_id).replace(/'/g,"\\'")}')">
+        <div class="hr-ic">📍</div>
+        <div class="hr-main">
+          <div class="hr-name">${esc(name)}</div>
+          <div class="hr-sub">${esc(sub)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  if(loading && !preds.length){
+    html += `<div class="hr-msg">🔍 地図からも探しています…</div>`;
+  }
+  if(!html){
+    html = `<div class="hr-msg">該当する場所が見つかりませんでした<br>
+      <span style="font-size:11px">ビル名・建物名でも探せます。地名を足すと見つかりやすくなります（例：那覇 スターバックス）</span></div>`;
+  } else if(noGps && !loading && preds.length){
+    // 位置情報が無いと全国が対象＝遠くの同名店が並ぶ。絞り方を案内する
+    html += `<div class="hr-msg" style="border-top:1px solid var(--line)">
+      📍 現在地が使えないため全国から探しています<br>
+      <span style="font-size:11px">地名を足すと絞れます（例：那覇 スターバックス）</span></div>`;
+  }
+
+  el.innerHTML = html;
+  el.style.display = 'block';
+}
+
+// 既知の店を選択 → そのまま店の詳細へ
+function heroPickLocal(id){
+  hideHeroResults();
+  openModal(id);
+}
+
+// Google の場所を選択 → STORES に登録してから店の詳細へ
+function heroPickPlace(placeId){
+  const exists = STORES.find(s => s.placeId === placeId);
+  if(exists){ hideHeroResults(); openModal(exists.id); return; }
+
+  // 地図が未生成でも詰まらせない（initializeGooglePlaces は div フォールバック付き）
+  if(!placesService) initializeGooglePlaces();
+  if(!placesService){
+    _heroMsg('地図の準備中です。少し待ってからもう一度お試しください');
+    return;
+  }
+
+  _heroMsg('📍 お店の情報を取得しています…');
+  // 💰 fields を明示＝基本データのみ課金（未指定だと電話/サイト/口コミまで取得＝最上位SKUで課金される）
+  //    sessionToken を渡すことで、直前の入力補完と1セッションとしてまとめて課金される
+  placesService.getDetails({
+    placeId, language: 'ja',
+    fields: PLACE_BASIC_FIELDS,
+    sessionToken: _heroSessionToken || undefined
+  }, (place, status) => {
+    _heroSessionToken = null;   // セッション終了。次の検索は新しいトークンで
+    if(status !== google.maps.places.PlacesServiceStatus.OK || !place){
+      _heroMsg('この場所の情報を取得できませんでした');
+      return;
+    }
+    const store = placeToStore(place, STORES.length);
+    store.address = place.formatted_address || place.vicinity || '';
+    store.area    = extractArea(store.address) || '';
+    STORES.push(store);
+    hideHeroResults();
+    openModal(store.id);   // ＝既存の声・対応状況を見せてから「評価する」へ
+  });
+}
+
+// 候補の外side をタップしたら閉じる
+document.addEventListener('click', (e) => {
+  const bar = e.target.closest?.('.searchbar');
+  if(!bar) hideHeroResults();
+});
+
 function render(){
   if(!document.getElementById('cnt')) return; // 探すページ以外では不要
   // 未評価リストを一度だけ描画（STORES読み込み後）
@@ -3276,7 +3590,7 @@ function render(){
       : '';
     countEl.innerHTML = allResults.length > 0
       ? `<b id="cnt">${allResults.length}</b> 件の"きれいな店"${extra}`
-      : `<b id="cnt" style="font-size:15px">名古屋のトイレを、きれいな順に。</b>`;
+      : `<b id="cnt" style="font-size:15px">全国のトイレを、きれいな順に。</b>`;
   }
 
   const list = document.getElementById('list');
@@ -3463,15 +3777,15 @@ function openModal(id){
         return `
           <div class="msec-t">📷 トイレの写真</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-            ${photos.map(p=>`
-              <img src="${p.photo_url}" alt="トイレ写真"
+            ${photos.map(p=>{const u=safeImgUrl(p.photo_url); return u?`
+              <img src="${u}" alt="トイレ写真"
                 style="width:calc(33% - 6px);aspect-ratio:1;object-fit:cover;border-radius:10px;cursor:pointer"
-                onclick="window.open('${p.photo_url}','_blank')">`).join('')}
+                onclick="window.open('${u}','_blank')">`:''}).join('')}
           </div>`;
       })()}</div>
       <div class="msec-t">利用者のおすすめ</div>
       <div id="modal-kirein-reviews" class="reviews">
-        ${s.reviews.map(rv=>`<div class="rv"><div class="rt"><span>${rv.n}</span><span>${rv.t}</span></div><div class="rs">${star(rv.s)}</div><p>${rv.p}</p></div>`).join('')}
+        ${s.reviews.map(rv=>`<div class="rv"><div class="rt"><span>${esc(rv.n)}</span><span>${esc(rv.t)}</span></div><div class="rs">${star(rv.s)}</div><p>${esc(rv.p)}</p></div>`).join('')}
       </div>
 
       <!-- オーナーからの改善報告 -->
@@ -3596,7 +3910,7 @@ async function loadImproveReport(placeId){
           <div style="display:flex;gap:8px;margin-bottom:8px;font-size:13px">
             <span style="color:var(--mint);font-weight:700;flex-shrink:0">›</span>
             <div>
-              <span style="color:var(--ink)">${imp.note}</span>
+              <span style="color:var(--ink)">${esc(imp.note)}</span>
               <span style="color:var(--muted);font-size:11px;margin-left:8px">${new Date(imp.date).toLocaleDateString('ja-JP')}</span>
             </div>
           </div>`).join('')}
@@ -3623,12 +3937,8 @@ function calcDistanceM(lat1, lng1, lat2, lng2){
 const GPS_RADIUS = 300; // 評価できる半径（m）
 
 function evaluateStore(storeId){
-  const user = getUserData();
-  if(!user){
-    window._pendingStoreId = storeId;
-    showLoginModal();
-    return;
-  }
+  const user = ensureGuestUser();   // 匿名のまま進める
+  ensureAuthReady();                // 送信時に待たせないよう先に認証
   const shop = STORES.find(s => String(s.id) === String(storeId));
 
   // 店舗の座標がない場合はGPSチェックをスキップ
@@ -3689,16 +3999,41 @@ function evaluateStore(storeId){
 // submitReview は submitPost で置き換え済み
 
 // Google Maps 初期化
+//   💰 地図は「表示されるたび」に課金される（Dynamic Maps）。SNSから来て検索→投稿だけして
+//      地図を一度も見ないユーザーが多いので、画面に入った時に初めて生成する（遅延ロード）。
+//      ⚠️ gmap を使う箇所は全て if(window.gmap) で守られているので未生成でも壊れない。
 const sakaeCenter = {lat: 35.1705, lng: 136.8819};
-window.gmap = new google.maps.Map(document.getElementById('map'), {
-  zoom: 15,
-  center: sakaeCenter,
-  mapTypeId: google.maps.MapTypeId.ROADMAP
-});
+
+function initKireinMap(){
+  if(window.gmap) return window.gmap;
+  const el = document.getElementById('map');
+  if(!el || !window.google?.maps) return null;
+
+  window.gmap = new google.maps.Map(el, {
+    zoom: 15,
+    center: sakaeCenter,
+    mapTypeId: google.maps.MapTypeId.ROADMAP
+  });
+  attachMapPoiHandler();
+  try{ renderPins(filtered().slice(0, 30)); }catch(e){}
+  return window.gmap;
+}
+
+// 地図が画面に入ったら初めて読み込む
+(function observeMapLazyLoad(){
+  const el = document.getElementById('map');
+  if(!el) return;
+  if(!('IntersectionObserver' in window)){ initKireinMap(); return; }
+  const io = new IntersectionObserver((entries) => {
+    if(entries.some(en => en.isIntersecting)){ io.disconnect(); initKireinMap(); }
+  }, { rootMargin: '200px' });
+  io.observe(el);
+})();
 
 window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
 // Google Maps のネイティブPOIクリック → Kirein評価モーダルへ
+function attachMapPoiHandler(){
 window.gmap.addListener('click', (e) => {
   if (!e.placeId) return; // POI以外のクリックは無視
   e.stop(); // Googleデフォルトの InfoWindow を抑制
@@ -3729,6 +4064,7 @@ window.gmap.addListener('click', (e) => {
     }
   );
 });
+}
 
 // ── カード一覧クリック（イベントデリゲーション）──────────────────────
 // render() のたびに付け直す必要がないよう、#list に1回だけ登録する

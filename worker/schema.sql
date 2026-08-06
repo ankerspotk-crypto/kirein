@@ -17,6 +17,16 @@ CREATE TABLE IF NOT EXISTS stores (
 --   wrangler d1 execute kirein --remote --command "ALTER TABLE stores ADD COLUMN email TEXT"
 --   wrangler d1 execute kirein --remote --command "ALTER TABLE stores ADD COLUMN token TEXT"
 
+-- 汎用キャッシュ（集計結果の置き場）
+--   用途: vote_counts = 全投稿を集計した「きれい/気になる」カウント。
+--   ⚠️ これが無いと消費者アプリが毎回 Firestore の posts を全件読みし、
+--      「投稿数 × 訪問者数」で読取が増える（＝拡散すると無料枠が即枯れる）。
+CREATE TABLE IF NOT EXISTS kv_cache (
+  key     TEXT PRIMARY KEY,
+  value   TEXT,               -- JSON文字列
+  updated TEXT
+);
+
 -- Ph2: 口コミ監視で検知した新規ネガのアラート
 CREATE TABLE IF NOT EXISTS alerts (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
