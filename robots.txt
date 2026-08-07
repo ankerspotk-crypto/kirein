@@ -5,6 +5,5 @@ Disallow: /cert.html
 Disallow: /tokushoho.html
 Disallow: /ops-sns.html
 Disallow: /sns.html
-Disallow: /toilet.html
 
 Sitemap: https://kirein.net/sitemap.xml
