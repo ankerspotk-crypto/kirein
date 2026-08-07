@@ -3225,12 +3225,18 @@ function filtered(){
     r.sort((a,b)=>RANKORDER[calcStoreRank(b.id)]-RANKORDER[calcStoreRank(a.id)]);
   } else {
     r.sort((a,b)=>{
+      // ⚠️ 声が届いている店を必ず先に出す。
+      //    これが無いと、一覧の大半が「まだ投票なし」の店で埋まり、
+      //    実際には254店に声があるのにサービス全体が空に見える。
+      const va = (a._cleanVotes||0)+(a._dirtyVotes||0);
+      const vb = (b._cleanVotes||0)+(b._dirtyVotes||0);
+      if((va>0) !== (vb>0)) return vb>0 ? 1 : -1;
       const sa=calcScore(a.id), sb=calcScore(b.id);
       if(sort==='rank') return RANKORDER[calcStoreRank(b.id)]-RANKORDER[calcStoreRank(a.id)];
       if(sb && sa) return (sb.total||0)-(sa.total||0);
       if(sb) return 1;
       if(sa) return -1;
-      return 0;
+      return vb - va;   // どちらもスコア未算出なら声の多い順
     });
   }
   return r;
@@ -3627,7 +3633,11 @@ function render(){
       ? `<span style="font-size:11px;color:var(--muted);margin-left:6px">（近い順${LIMIT}件表示）</span>`
       : '';
     countEl.innerHTML = allResults.length > 0
-      ? `<b id="cnt">${allResults.length}</b> 件の"きれいな店"${extra}`
+      ? `<b id="cnt">${allResults.length}</b> 件の"きれいな店"${extra}${(()=>{
+          // 実際に声が届いている店の数を出す（空に見せないため）
+          const v = allResults.filter(s=>(s._cleanVotes||0)+(s._dirtyVotes||0)>0).length;
+          return v ? `<span style="font-size:11.5px;color:var(--mint);font-weight:700;margin-left:8px">💬 ${v}件に声が届いています</span>` : '';
+        })()}`
       : `<b id="cnt" style="font-size:15px">全国のトイレを、きれいな順に。</b>`;
   }
 
