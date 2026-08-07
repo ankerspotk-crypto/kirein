@@ -114,6 +114,38 @@ async function deletePost(id) {
   return { ok: true, backup: file };
 }
 
+// ── D1（契約店・アラート・対応状況）────────────────────────────
+//   ⚠️ 契約店が出るまでは全部0件。来たときに見えるよう先に通しておく。
+async function d1(sql) {
+  try {
+    const { stdout } = await execFileP('npx',
+      ['wrangler', 'd1', 'execute', 'kirein', '--remote', '-c', 'wrangler.local.toml', '--command', sql, '--json'],
+      { cwd: path.join(process.cwd(), 'worker'), maxBuffer: 8 * 1024 * 1024 });
+    const j = JSON.parse(stdout.slice(stdout.indexOf('[')));
+    return j[0]?.results || [];
+  } catch (e) { return null; }   // 取れなくても画面は壊さない
+}
+
+async function loadOps() {
+  const [stores, alerts, responses] = await Promise.all([
+    d1('SELECT id, name, place_id, email, status, created, last_checked FROM stores ORDER BY created DESC LIMIT 100'),
+    d1('SELECT store_id, area, source, quote, detected FROM alerts ORDER BY id DESC LIMIT 100'),
+    d1('SELECT store_id, status, comment, updated FROM responses ORDER BY updated DESC LIMIT 100'),
+  ]);
+  // 店が自分で載せた改善報告（Firestore stores）
+  let improvements = [];
+  try {
+    const j = await fs_(`${BASE}/stores?pageSize=300`);
+    for (const d of j.documents || []) {
+      const f = fields(d);
+      for (const im of f.improvements || []) {
+        improvements.push({ shop: f.shop_name || f.place_id || d.name.split('/').pop(), note: im.note, date: im.date });
+      }
+    }
+  } catch (e) {}
+  return { stores, alerts, responses, improvements };
+}
+
 // ── 画面 ────────────────────────────────────────────────
 const PAGE = `<!doctype html><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -150,6 +182,20 @@ const PAGE = `<!doctype html><meta charset="utf-8">
  .rate{font-size:12.5px;color:var(--muted)}
  .empty{color:var(--muted);padding:26px;text-align:center}
  .err{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:11px 13px;border-radius:10px;margin-bottom:12px;font-size:13px}
+ .tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+ .tb{background:#fff;color:var(--muted);border:1px solid var(--line);padding:8px 16px}
+ .tb.on{background:var(--pine);color:#fff;border-color:var(--pine)}
+ .shoprow{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+ .shoprow .n{font-weight:700;font-size:14px}
+ .cnt{display:flex;gap:10px;font-size:12.5px;white-space:nowrap}
+ .cnt .g{color:#0f766e;font-weight:700}
+ .cnt .r{color:var(--bad);font-weight:700}
+ .sec{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+ .sec h3{margin:0 0 8px;font-size:14px;color:var(--pine)}
+ .none{color:var(--muted);font-size:12.5px}
+ table.d{width:100%;border-collapse:collapse;font-size:12.5px}
+ table.d th,table.d td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left;vertical-align:top}
+ table.d th{color:var(--muted);font-weight:700;font-size:11.5px}
  .note{background:#eef5fb;border-left:3px solid var(--mint);padding:10px 12px;border-radius:0 8px 8px 0;font-size:12.5px;margin-bottom:14px}
 </style>
 <header><div class="wrap"><p>キレイン（ローカル専用・この端末からのみ）</p><h1>管理コンソール</h1></div></header>
@@ -157,7 +203,12 @@ const PAGE = `<!doctype html><meta charset="utf-8">
   <div class="note">利用者が書いた<b>「気になった点」の中身</b>は、サービス上どこにも公開されません。ここでだけ読めます。</div>
   <div id="err"></div>
   <div class="cards" id="stats"></div>
-  <div class="bar">
+  <div class="tabs">
+    <button class="tb on" data-v="posts" onclick="setView('posts')">届いた声</button>
+    <button class="tb" data-v="shops" onclick="setView('shops')">店舗ごと</button>
+    <button class="tb" data-v="ops"   onclick="setView('ops')">契約・対応</button>
+  </div>
+  <div class="bar" id="barPosts">
     <input id="q" placeholder="店名で絞り込む">
     <button class="b2" onclick="setF('all')">すべて</button>
     <button class="b2" onclick="setF('neg')">不満があるものだけ</button>
@@ -165,6 +216,8 @@ const PAGE = `<!doctype html><meta charset="utf-8">
     <button class="b1" onclick="load()">再読み込み</button>
   </div>
   <div id="list" class="empty">読み込み中…</div>
+  <div id="shops" style="display:none"></div>
+  <div id="ops" style="display:none"></div>
 </main>
 <script>
 let ROWS=[], F='all';
@@ -222,6 +275,71 @@ async function del(id){
   alert('削除しました。控え: '+j.backup);
   load();
 }
+let VIEW='posts', OPS=null;
+function setView(v){
+  VIEW=v;
+  document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
+  document.getElementById('barPosts').style.display = v==='posts' ? '' : 'none';
+  document.getElementById('list').style.display  = v==='posts' ? '' : 'none';
+  document.getElementById('shops').style.display = v==='shops' ? '' : 'none';
+  document.getElementById('ops').style.display   = v==='ops'   ? '' : 'none';
+  if(v==='shops') renderShops();
+  if(v==='ops')   loadOps();
+}
+
+// 店舗ごと＝どの店に何件届いているか（＝声を届けるべき順・営業の順でもある）
+function renderShops(){
+  const m={};
+  ROWS.forEach(r=>{
+    const k=r.shop_name||r.place_id||r.shop_id; if(!k) return;
+    if(!m[k]) m[k]={name:r.shop_name||k, place_id:r.place_id, n:0, neg:0, items:{}, last:null};
+    const o=m[k]; o.n++;
+    const t=new Date(r.created_at||0).getTime(); if(t && (!o.last || t>o.last)) o.last=t;
+    const p=r._private||{};
+    const it=(p.negative_items||[]).filter(Boolean);
+    if(it.length||p.negative_comment) o.neg++;
+    it.forEach(i=>o.items[i]=(o.items[i]||0)+1);
+  });
+  const list=Object.values(m).sort((a,b)=> b.neg-a.neg || b.n-a.n);
+  const box=document.getElementById('shops');
+  box.innerHTML = '<div class="note">不満が届いている順。<b>この順番が、声を届けるべき順であり、営業をかける順でもある。</b></div>'
+   + list.slice(0,120).map(o=>{
+      const top=Object.entries(o.items).sort((a,b)=>b[1]-a[1]).slice(0,4);
+      return '<div class="shoprow"><div style="min-width:0;flex:1">'
+        +'<div class="n">'+esc(o.name)+'</div>'
+        +(top.length?'<div class="tags">'+top.map(([k,v])=>'<span class="t">'+esc(k)+' '+v+'</span>').join('')+'</div>':'')
+        +(o.last?'<div class="meta">最終 '+jdate(new Date(o.last).toISOString())+'</div>':'')
+        +'</div><div class="cnt"><span class="r">不満 '+o.neg+'</span><span>投稿 '+o.n+'</span></div></div>';
+   }).join('');
+}
+
+// 契約・対応（D1）＋店が自分で載せた改善報告
+async function loadOps(){
+  const box=document.getElementById('ops');
+  if(!OPS){ box.innerHTML='<div class="none">読み込み中…</div>';
+    try{ OPS=await (await fetch('/api/ops')).json(); }catch(e){ box.innerHTML='<div class="err">'+esc(e.message)+'</div>'; return; } }
+  const t=(rows,cols,empty)=>{
+    if(rows===null) return '<div class="none">読み取れませんでした（wranglerの認証を確認）</div>';
+    if(!rows.length) return '<div class="none">'+empty+'</div>';
+    return '<table class="d"><tr>'+cols.map(c=>'<th>'+c[0]+'</th>').join('')+'</tr>'
+      + rows.map(r=>'<tr>'+cols.map(c=>'<td>'+esc(String(r[c[1]]??'')).slice(0,120)+'</td>').join('')+'</tr>').join('')
+      + '</table>';
+  };
+  box.innerHTML =
+    '<div class="sec"><h3>契約店</h3>'
+    + t(OPS.stores,[['店ID','id'],['店名','name'],['状態','status'],['メール','email'],['登録','created'],['最終監視','last_checked']],
+        'まだ契約店はいません（決済されるとここに出ます）')+'</div>'
+  + '<div class="sec"><h3>店が載せた改善報告</h3>'
+    + t(OPS.improvements,[['店','shop'],['内容','note'],['日付','date']],
+        'まだ改善報告はありません')+'</div>'
+  + '<div class="sec"><h3>店の対応状況</h3>'
+    + t(OPS.responses,[['店ID','store_id'],['状態','status'],['コメント','comment'],['更新','updated']],
+        'まだ対応の記録はありません（対応中／対応済み／再チェック済みがここに出ます）')+'</div>'
+  + '<div class="sec"><h3>監視で検知したネガ</h3>'
+    + t(OPS.alerts,[['店ID','store_id'],['箇所','area'],['出所','source'],['引用','quote'],['検知','detected']],
+        'まだ検知はありません（契約店の口コミを6時間ごとに見ています）')+'</div>';
+}
+
 document.getElementById('q').addEventListener('input',render);
 load();
 </script>`;
@@ -249,6 +367,8 @@ const server = http.createServer(async (req, res) => {
       };
       return send(200, { rows, stats });
     }
+
+    if (req.url.startsWith('/api/ops')) return send(200, await loadOps());
 
     if (req.url === '/api/delete' && req.method === 'POST') {
       let body = '';
