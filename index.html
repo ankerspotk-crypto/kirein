@@ -804,6 +804,20 @@ function ensureAuthReady(){
     .catch(e => { console.warn('匿名ログイン失敗:', e.message); return null; });
 }
 
+// 投稿直後の共有＝「勝手にふえる」導線。
+//   ⚠️ 店名は絶対に載せない。晒しになった瞬間、信用毀損の側に立つことになる。
+//      伝えるのは「言えなかったことを言えた」という行動だけ。
+function shareAfterPost(){
+  const url = 'https://kirein.net/';
+  const t = 'お店のトイレ、気になったけど言えなかった。\nキレインで匿名で伝えてきた。晒しじゃなくて「直してほしい」を届けるやつ。';
+  (async()=>{
+    try{
+      if(navigator.share){ await navigator.share({ title:'キレイン', text:t, url }); }
+      else { await navigator.clipboard.writeText(t + ' ' + url); alert('共有用の文をコピーしました'); }
+    }catch(e){ /* 共有をやめただけ。何もしない */ }
+  })();
+}
+
 function updateUserPoints(points){
   let user = getUserData();
   if(!user) return;
@@ -1004,7 +1018,8 @@ function submitQuickVote(shopId){
         ${(updatedUser.post_count||0) === 1 ? '<div style="font-size:12px;color:var(--mint);margin-top:8px;font-weight:700">🌱 初代レポーター候補に認定されました！</div>' : ''}
         ${(updatedUser.post_count||0) === 3 ? '<div style="font-size:12px;color:var(--mint);margin-top:8px;font-weight:700">⭐ 初代キレインレポーター認定！</div>' : ''}
       </div>
-      <button class="btn mint" onclick="closeModal();window.location.hash='/mypage'" style="width:100%;justify-content:center;padding:13px">マイページで確認する →</button>
+      <button class="btn mint" onclick="shareAfterPost()" style="width:100%;justify-content:center;padding:13px">🔗 この行動を友だちに伝える</button>
+      <button onclick="closeModal();window.location.hash='/mypage'" style="width:100%;padding:11px;margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">マイページで確認する →</button>
     </div>`;
   document.getElementById('overlay').classList.add('open');
   _quickVoteType = null;
@@ -2003,7 +2018,8 @@ async function submitPost(e, shopId){
           <span style="font-size:16px">👑</span>
           <span><b>公認調査員として特典を受け取る資格があります！</b><br>詳細は近日公開予定です。</span>
         </div>`}
-        <button class="btn mint" onclick="closeModal();window.location.hash='/mypage'" style="width:100%;justify-content:center;padding:13px">マイページで確認する →</button>
+        <button class="btn mint" onclick="shareAfterPost()" style="width:100%;justify-content:center;padding:13px">🔗 この行動を友だちに伝える</button>
+      <button onclick="closeModal();window.location.hash='/mypage'" style="width:100%;padding:11px;margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">マイページで確認する →</button>
       </div>`;
     document.getElementById('overlay').classList.add('open');
 
