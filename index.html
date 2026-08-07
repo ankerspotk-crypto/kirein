@@ -886,10 +886,36 @@ function getPosts(){
 // Firestore に投稿を保存（非同期・compat版）
 // 【Phase3②】公開 posts にはネガ生content・投稿者UIDを載せない（世界に読めるので公開項目のみ）。
 //   ネガ生content／投稿者UIDは posts/{id}/private/detail へ隔離＝クライアント読取不可（店本人/運営のみ）。
-async function savePostToFirestore(post){
-  if(!window.db) return;
+// ── 送れなかった投稿を溜めて、次の機会に送り直す ──────────────────
+//   ⚠️ 電波が悪い・一瞬切れた、で保存に失敗しても画面は「投稿完了」と出る。
+//      そのまま捨てると、書いた本人は届いたつもりで消える。端末に残して必ず送り直す。
+const PENDING_KEY = 'kirein_pending_posts';
+function getPending(){ try{ return JSON.parse(localStorage.getItem(PENDING_KEY)||'[]'); }catch(e){ return []; } }
+function setPending(a){ try{ localStorage.setItem(PENDING_KEY, JSON.stringify(a.slice(-50))); }catch(e){} }
+function queuePost(post){
+  const a = getPending();
+  if(a.some(function(x){ return x.post_id === post.post_id; })) return;   // 二重に溜めない
+  a.push(post); setPending(a);
+  console.warn('投稿を保存できなかったので端末に残しました。次回送り直します。');
+}
+async function flushPending(){
+  const a = getPending();
+  if(!a.length || !window.db) return;
+  const rest = [];
+  for(const p of a){
+    try{ await savePostToFirestore(p, true); }
+    catch(e){ rest.push(p); }
+  }
+  setPending(rest);
+  if(a.length !== rest.length) console.log('溜まっていた投稿を' + (a.length - rest.length) + '件送りました');
+}
+
+async function savePostToFirestore(post, isRetry){
+  // ⚠️ 再送中は必ず例外にする。黙って return すると呼び出し元が「送れた」と誤解して捨ててしまう。
+  if(!window.db){ if(isRetry) throw new Error('db未初期化'); queuePost(post); return; }
   // ⚠️ ルールが request.auth != null を要求する。認証前に書くと必ず弾かれるので必ず待つ。
   const authUser = await ensureAuthReady();
+  if(!authUser){ if(isRetry) throw new Error('未認証'); queuePost(post); return; }
   if(authUser && !post.user_uid) post.user_uid = authUser.uid;
   try {
     const { negative_items, negative_comment, user_uid, ...pub } = post;
@@ -914,6 +940,8 @@ async function savePostToFirestore(post){
     }
   } catch(e) {
     console.error('❌ Firestore 保存エラー:', e);
+    if(!isRetry) queuePost(post);          // 捨てずに残して次回送る
+    else throw e;                          // 再送中の失敗は呼び出し元で戻す
   }
 }
 
@@ -3125,6 +3153,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadRestaurantsFromAPI(); // 飲食店データを読み込み
   updateUIForLogin();
   handleRoute();
+  flushPending();         // 前回送れなかった投稿があれば送り直す
   // 現在地から探す をデフォルトON（stores ロード完了と並行して GPS 取得開始）
   _autoGPS();
   // 1000件チャレンジ統計を読み込んでUIに反映
