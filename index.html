@@ -782,6 +782,31 @@ function getOrCreateUser(nickname){
 //   ⚠️ 投稿にコストはかからない：匿名認証は無料、Firestoreは1投稿=2書込（無料枠2万/日）。
 //      課金が発生するのは「どの場所か」を特定する Google Places の方だけ。
 const GUEST_NAME = '匿名';   // ⚠️ 関数より前に置く（後置きだとTDZで落ちる）
+// 写真から撮影場所・日時などの付随情報(Exif)を落とす。
+//   ⚠️ canvasに描き直すと画素だけが残り、Exifは引き継がれない。
+//      これをやらないと「トイレを撮った場所と時刻」が公開URLの画像に載る。
+//   長辺1600pxに縮小もするので、通信量と保存量も減る。
+function stripExifAndShrink(file, maxSide = 1600){
+  return new Promise((resolve)=>{
+    try{
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = ()=>{
+        URL.revokeObjectURL(url);
+        let { width:w, height:h } = img;
+        const scale = Math.min(1, maxSide / Math.max(w, h));
+        w = Math.round(w * scale); h = Math.round(h * scale);
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        cv.toBlob(b => resolve(b || file), 'image/jpeg', 0.85);
+      };
+      img.onerror = ()=>{ URL.revokeObjectURL(url); resolve(file); };  // 失敗しても投稿は止めない
+      img.src = url;
+    }catch(e){ resolve(file); }
+  });
+}
+
 function ensureGuestUser(){
   let u = getUserData();
   if(!u){
@@ -1949,14 +1974,22 @@ async function submitPost(e, shopId){
 
     // 写真アップロード（Firebase Storage）
     let photoUrl = null;
+    // ⚠️ 画像以外・巨大ファイルを弾く（Storageに任意のファイルを置かせない）
+    if(photoFile && !/^image\//.test(photoFile.type || '')){
+      alert('画像ファイルを選んでください'); return;
+    }
+    if(photoFile && photoFile.size > 12 * 1024 * 1024){
+      alert('写真が大きすぎます（12MBまで）'); return;
+    }
     if(photoFile && window.storage){
       const submitBtn = document.getElementById('submitBtn');
       if(submitBtn){ submitBtn.textContent = '📤 写真をアップロード中...'; submitBtn.disabled = true; }
       try {
-        const uid = window.auth?.currentUser?.uid || 'anon';
-        const ext = photoFile.name.split('.').pop() || 'jpg';
-        const ref = window.storage.ref(`toilet_photos/${uid}_${Date.now()}.${ext}`);
-        await ref.put(photoFile);
+        // ⚠️ ファイル名にUIDを入れない。公開URLに載って同一人物の投稿を突き合わせられてしまう。
+        const name = (crypto?.randomUUID?.() || (Date.now()+'-'+Math.random().toString(36).slice(2)));
+        const safe = await stripExifAndShrink(photoFile);   // 撮影場所・日時を落としてから送る
+        const ref  = window.storage.ref(`toilet_photos/${name}.jpg`);
+        await ref.put(safe, { contentType: 'image/jpeg' });
         photoUrl = await ref.getDownloadURL();
       } catch(err) {
         console.error('写真アップロード失敗:', err);
