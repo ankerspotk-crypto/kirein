@@ -77,6 +77,10 @@
         border-radius:0 8px 8px 0;font-size:12.5px;margin-top:10px}
   .danger{background:#fef2f2;border-left:3px solid #dc2626;padding:11px 13px;
           border-radius:0 8px 8px 0;font-size:12.5px;color:#991b1b}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{background:#eef5fb;border:1px solid var(--line);color:var(--pine);border-radius:999px;
+        padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .chip:hover{background:var(--mint);color:#fff;border-color:var(--mint)}
   @media(max-width:600px){ .q-top{flex-direction:column} .q-open{width:100%;text-align:center} }
 </style>
 
@@ -113,17 +117,44 @@
     </div>
   </div>
 
-  <!-- 検索クエリ -->
+  <!-- 検索クエリ：本命 -->
   <div class="card">
-    <h2>🔍 未練で探す（本命）</h2>
-    <div class="sub">この言い回しをする人は、たいてい店名を書いていない＝絡んでも安全で、しかもキレインが一番刺さる層</div>
+    <h2>🔍 トイレが嫌だった人を探す</h2>
+    <div class="sub">ここが本命。数が出る代わりに店名入りも混ざるので、上のチェックを通ったものだけに声をかける</div>
+    <div id="qMain"></div>
+  </div>
+
+  <!-- 未練 -->
+  <div class="card">
+    <h2>💙 未練で探す（絡みやすい）</h2>
+    <div class="sub">「また行きたいのに」側の言い方。店名を書かない人が多く、キレインが一番刺さる層</div>
     <div id="qSafe"></div>
   </div>
 
+  <!-- 自分で調整 -->
   <div class="card">
-    <h2>🔍 補助（店名が出やすい・要注意）</h2>
-    <div class="sub">母数は多いが、店名入りが混ざる。上のチェックを通ったものだけ</div>
-    <div id="qCare"></div>
+    <h2>🛠 自分で言葉を変えて探す</h2>
+    <div class="sub">当たらない時はここで調整する。単語を押すと足される</div>
+    <textarea id="customQ" rows="3"
+      style="width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;
+             font-family:inherit;font-size:13px;line-height:1.6;resize:vertical"
+      placeholder="例：(トイレ OR お手洗い) (汚い OR 臭い) -RT lang:ja"></textarea>
+    <div style="margin:9px 0 4px;font-size:11.5px;color:var(--muted)">場所</div>
+    <div class="chips" id="chipPlace"></div>
+    <div style="margin:9px 0 4px;font-size:11.5px;color:var(--muted)">状態・気持ち</div>
+    <div class="chips" id="chipWord"></div>
+    <div style="margin:9px 0 4px;font-size:11.5px;color:var(--muted)">絞り込み</div>
+    <div class="chips" id="chipOpt"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="q-open" style="border:none;cursor:pointer" onclick="openCustom()">この条件でXを開く →</button>
+      <button class="btn-copy" onclick="clearCustom()">消す</button>
+    </div>
+    <div class="note" style="margin-top:10px">
+      <b>当たらない時のコツ</b><br>
+      ・条件を<b>減らす</b>（「店」や「ホテル」を外すと一気に増える）<br>
+      ・ひらがなも試す（きたない・くさい）<br>
+      ・Xの画面で<b>「最新」タブ</b>になっているか確認する
+    </div>
   </div>
 
   <!-- 返信テンプレ -->
@@ -169,33 +200,36 @@ const today = () => new Date().toISOString().slice(0,10);
    -RT       …リツイートを除外（本人の声だけ拾う）
    lang:ja   …日本語だけ
    -filter:replies …会話の枝を除外して、独り言＝本音を拾う           */
-const QUERIES_SAFE = [
-  { label:'「また行きたいのに」＋トイレ',
-    why:'センターピンそのもの。未練を言葉にしている人',
-    q:'("また行きたいのに" OR "また来たいのに" OR "また行きたいけど") (トイレ OR お手洗い) -RT lang:ja -filter:replies' },
-  { label:'「美味しいのに」＋トイレ',
-    why:'料理は褒めている＝晒す気がない人。一番安全で一番刺さる',
-    q:'("美味しいのに" OR "おいしいのに" OR "味は最高" OR "料理は美味しい") (トイレ OR お手洗い OR 洗面) -RT lang:ja -filter:replies' },
-  { label:'「いい店なのに」「惜しい」',
-    why:'"惜しい"は未練の言葉。怒りではない',
-    q:'("いい店なのに" OR "良い店なのに" OR "惜しい" OR "もったいない") (トイレ OR お手洗い) 店 -RT lang:ja -filter:replies' },
-  { label:'「好きな店なんだけど」',
-    why:'言いたいけど言えない、を自分で言っている状態',
-    q:'("好きな店" OR "好きなお店" OR "常連") (トイレ OR お手洗い) (汚 OR 臭 OR 気になる) -RT lang:ja -filter:replies' },
-  { label:'「トイレさえ〜なら」',
-    why:'条件付きの不満＝直れば通う人。まさに改善リクエスト層',
-    q:'("トイレさえ" OR "トイレだけ" OR "お手洗いだけ") (きれい OR 綺麗 OR 清潔 OR 良ければ OR なんとか) -RT lang:ja -filter:replies' },
-  { label:'デート・女子会でのトイレ',
-    why:'女性客が離れる理由。店にとって一番効く指摘',
-    q:'(デート OR 女子会 OR 合コン) (トイレ OR お手洗い OR パウダールーム) (汚 OR 臭 OR 残念 OR 気になる) -RT lang:ja -filter:replies' },
+const QUERIES_MAIN = [
+  { label:'トイレが汚い（ど真ん中）',
+    why:'一番数が出る。漢字/ひらがな両方を拾う',
+    q:'(トイレ OR お手洗い OR 便所) (汚い OR 汚かった OR きたない OR 不潔) -RT lang:ja' },
+  { label:'におい',
+    why:'「汚い」より言われやすい。悪臭は改善リクエストに直結',
+    q:'(トイレ OR お手洗い) (臭い OR くさい OR 異臭 OR 悪臭) -RT lang:ja' },
+  { label:'感情が出ている投稿',
+    why:'「汚い」と書かずに嫌悪を表す人。取りこぼしやすい層',
+    q:'(トイレ OR お手洗い) (最悪 OR 無理だった OR ドン引き OR ゲンナリ OR 萎えた OR ショック) -RT lang:ja' },
+  { label:'お店で遭遇',
+    why:'飲食店に限定。投稿対象を特定しやすい',
+    q:'(トイレ OR お手洗い) (汚 OR 臭 OR 不潔) (店 OR お店 OR カフェ OR 居酒屋 OR 飲食店 OR ラーメン) -RT lang:ja' },
+  { label:'ホテル・駅・施設',
+    why:'飲食店以外。全国対応した今なら全部投稿できる',
+    q:'(トイレ OR お手洗い) (汚 OR 臭 OR 不潔) (ホテル OR 駅 OR サービスエリア OR デパート OR 商業施設) -RT lang:ja' },
+  { label:'女性視点・デート',
+    why:'店にとって一番痛い指摘。女性客が黙って離れる理由',
+    q:'(トイレ OR お手洗い OR パウダールーム) (汚 OR 臭 OR 残念) (デート OR 女子会 OR 彼女 OR 女性) -RT lang:ja' },
 ];
-const QUERIES_CARE = [
-  { label:'トイレが汚かった（一般）',
-    why:'母数は多いが店名入りが混ざる。チェック必須',
-    q:'(トイレ OR お手洗い) (汚かった OR 汚い OR 臭かった) (店 OR 飲食店 OR カフェ OR 居酒屋) -RT lang:ja -filter:replies' },
-  { label:'ホテル・駅・施設のトイレ',
-    why:'飲食店以外。全国対応した今なら拾える',
-    q:'(ホテル OR 駅 OR サービスエリア OR 商業施設) (トイレ OR お手洗い) (汚 OR 臭 OR 残念) -RT lang:ja -filter:replies' },
+const QUERIES_SAFE = [
+  { label:'「〜なのに、トイレが」',
+    why:'未練＝また行きたい人。晒す気がないので絡んでも安全',
+    q:'(トイレ OR お手洗い) (惜しい OR もったいない OR 残念) -RT lang:ja' },
+  { label:'「美味しいのに」',
+    why:'料理は褒めている＝キレインが一番刺さる層',
+    q:'(美味しいのに OR おいしいのに OR 味は最高) (トイレ OR お手洗い) -RT lang:ja' },
+  { label:'「トイレさえ」「トイレだけ」',
+    why:'条件付きの不満＝直れば通う人。改善リクエストそのもの',
+    q:'(トイレさえ OR トイレだけ OR お手洗いだけ) -RT lang:ja' },
 ];
 
 /* ── 返信テンプレ ─────────────────────────── */
@@ -257,8 +291,8 @@ function renderQueries(){
         </div>
       </div>`).join('');
   };
+  draw(QUERIES_MAIN,'qMain','care','要確認');
   draw(QUERIES_SAFE,'qSafe','safe','安全');
-  draw(QUERIES_CARE,'qCare','care','要注意');
 }
 
 /* ── テンプレ描画 ─────────────────────────── */
@@ -325,9 +359,38 @@ function renderRecs(){
   }).join('');
 }
 
+/* ── 自分で調整する検索 ───────────────────── */
+const CHIPS_PLACE = ['(トイレ OR お手洗い)','便所','パウダールーム','(店 OR お店 OR 飲食店)','(カフェ OR 喫茶店)','居酒屋','ラーメン','ホテル','駅','サービスエリア','(デパート OR 商業施設)','公園'];
+const CHIPS_WORD  = ['(汚い OR 汚かった OR きたない)','(臭い OR くさい)','不潔','最悪','無理だった','ドン引き','ゲンナリ','萎えた','(惜しい OR もったいない)','残念','掃除して','ベタベタ','詰まってた'];
+const CHIPS_OPT   = ['-RT','lang:ja','-filter:replies','-filter:links','min_faves:1'];
+
+function renderChips(){
+  const mk=(list,id)=>{
+    document.getElementById(id).innerHTML = list.map(w=>
+      `<button class="chip" onclick="addChip(${JSON.stringify(w).replace(/"/g,'&quot;')})">${esc(w)}</button>`).join('');
+  };
+  mk(CHIPS_PLACE,'chipPlace'); mk(CHIPS_WORD,'chipWord'); mk(CHIPS_OPT,'chipOpt');
+}
+function addChip(w){
+  const el=document.getElementById('customQ');
+  const cur=el.value.trim();
+  if(cur.includes(w)) return;                 // 二重に足さない
+  el.value = cur ? cur + ' ' + w : w;
+  el.focus();
+}
+function clearCustom(){ document.getElementById('customQ').value=''; }
+function openCustom(){
+  let q=document.getElementById('customQ').value.trim();
+  if(!q){ alert('探したい言葉を入れるか、下の単語を押してください'); return; }
+  if(!/lang:ja/.test(q)) q+=' lang:ja';       // 日本語だけに寄せる
+  if(!/-RT/.test(q))     q+=' -RT';           // リツイートは本人の声ではない
+  window.open('https://x.com/search?f=live&q='+encodeURIComponent(q), '_blank', 'noopener');
+}
+
 /* ── 起動 ─────────────────────────────────── */
 renderCount();
 renderQueries();
+renderChips();
 renderTemplates();
 renderRecs();
 renderCheck();
